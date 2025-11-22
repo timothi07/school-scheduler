@@ -38,12 +38,21 @@ import {
 
 // --- Firebase Configuration ---
 const firebaseConfig = {
-  apiKey: "AIzaSyYourActualKeyHere...",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "12345...",
-  appId: "1:12345..."
+
+  apiKey: "AIzaSyCnGYvKV5RM920W9MfVK0vE9_OFDh9qOt4",
+
+  authDomain: "school-scheduler-be0ba.firebaseapp.com",
+
+  projectId: "school-scheduler-be0ba",
+
+  storageBucket: "school-scheduler-be0ba.firebasestorage.app",
+
+  messagingSenderId: "293883160030",
+
+  appId: "1:293883160030:web:96f28a8cdef6415a42294f",
+
+  measurementId: "G-DQWDYSGX12"
+
 };
 
 const app = initializeApp(firebaseConfig);
