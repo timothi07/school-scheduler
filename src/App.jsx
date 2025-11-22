@@ -33,7 +33,8 @@ import {
   BookOpen,
   X,
   Edit2,
-  RefreshCw
+  RefreshCw,
+  AlertTriangle
 } from 'lucide-react';
 
 // --- Firebase Configuration ---
@@ -55,10 +56,6 @@ const firebaseConfig = {
 
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = "school-scheduler-v1";
 
 // --- Constants ---
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -108,11 +105,11 @@ const INITIAL_TEACHERS = [
   {
     name: "KCR",
     timetable: {
-      "Monday": ["", "9A, 9C", "8A, 8C", "5A, 5B", "7A, 7B", "6A, 6B", "10A, 10C"],
-      "Tuesday": ["9A, 9C", "8A, 8C", "5A, 5B", "6A, 6B", "6A, 6B", "9A, 9C", "7A, 7B"],
-      "Wednesday": ["6A, 6B", "10A, 10C", "10A, 10C", "5A, 5B", "5A, 5B", "6A, 6B", "7A, 7B"],
-      "Thursday": ["6A, 6B", "10A, 10C", "10A, 10C", "8A, 8C", "7A, 7B", "5A, 5B", ""],
-      "Friday": ["8A, 8C", "7A, 7B", "5A, 5B", "", "10A, 10C", "9A, 9C", ""]
+      "Monday": ["", "8A, 8C", "7A, 7B", "5A, 5B", "", "9A, 9C", "6A, 6B"],
+      "Tuesday": ["9A, 9C", "8A, 8C", "6A, 6B", "", "5A, 5B", "", "10A, 10C"],
+      "Wednesday": ["9A, 9C", "5A, 5B", "10A, 10C", "", "6A, 6B", "7A, 7B", ""],
+      "Thursday": ["9A, 9C", "", "8A, 8C", "7A, 7B", "6A, 6B", "", "10A, 10C"],
+      "Friday": ["", "8A, 8C", "7A, 7B", "5A, 5B", "", "10A, 10C", "9A, 9C"]
     }
   },
   {
@@ -129,9 +126,9 @@ const INITIAL_TEACHERS = [
     name: "SL",
     timetable: {
       "Monday": ["10C", "9A", "8C", "", "8A", "8A", ""],
-      "Tuesday": ["10C", "9B", "9B", "9A", "8C", "", ""],
+      "Tuesday": ["10C", "9B", "9B", "9A", "BC", "", ""],
       "Wednesday": ["10C", "", "9A", "9B", "8C", "", ""],
-      "Thursday": ["10C", "9B", "9A", "", "8C", "", ""],
+      "Thursday": ["10C", "9B", "9A", "", "BC", "", ""],
       "Friday": ["10C", "", "9A", "", "9B", "8C", ""]
     }
   },
@@ -200,7 +197,7 @@ const INITIAL_TEACHERS = [
     timetable: {
       "Monday": ["9C", "10C", "", "10B", "8B", "", "10A"],
       "Tuesday": ["9C", "", "8A", "10B", "9B", "8C", ""],
-      "Wednesday": ["", "8C", "8B", "10C", "10A", "", ""],
+      "Wednesday": ["", "8C", "8B", "10C", "10A", "", ""], // <--- CHANGED TO 8C
       "Thursday": ["10A", "9C", "9A", "10C", "8A", "9B", ""],
       "Friday": ["", "9C", "9C", "9A", "", "10B", ""]
     }
@@ -232,14 +229,14 @@ const INITIAL_TEACHERS = [
       "Tuesday": ["8B", "7A", "6B", "8A", "", "", ""],
       "Wednesday": ["7B", "9C", "5B", "BA", "", "", ""],
       "Thursday": ["6A", "5B", "5A", "7A", "", "", ""],
-      "Friday": ["9B", "8B", "6B", "8C", "6A", "", ""]
+      "Friday": ["9B", "8B", "6B", "BC", "6A", "", ""]
     }
   },
   {
     name: "SH",
     timetable: {
       "Monday": ["5A", "8C", "6B", "9C", "8B", "", ""],
-      "Tuesday": ["6A", "8B", "8B", "9A", "7A", "8C", ""],
+      "Tuesday": ["6A", "8B", "8B", "9A", "7A", "BC", ""],
       "Wednesday": ["8C", "", "8C", "5B", "8A", "", ""],
       "Thursday": ["7B", "8B", "", "9B", "BA", "", ""],
       "Friday": ["6A", "", "", "", "", "", ""]
@@ -980,6 +977,7 @@ export default function App() {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
+  const [authError, setAuthError] = useState(null);
   const [activeTab, setActiveTab] = useState('manage'); 
   const [selectedTeacher, setSelectedTeacher] = useState(null);
 
@@ -994,6 +992,7 @@ export default function App() {
         }
       } catch (err) {
         console.error("Auth failed", err);
+        setAuthError(err.message);
       }
     };
 
@@ -1230,7 +1229,24 @@ export default function App() {
       </header>
 
       {/* Content Area */}
-      <main className="flex-1 p-4 overflow-hidden min-h-0">
+      <main className="flex-1 p-4 overflow-hidden min-h-0 relative">
+        
+        {authError && (
+          <div className="absolute top-4 left-4 right-4 z-50 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-sm flex items-start gap-3 animate-in slide-in-from-top-2">
+            <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-bold text-sm">Authentication Error</h3>
+              <p className="text-sm mt-1 opacity-90">{authError}</p>
+              <p className="text-xs mt-2 font-medium text-red-800">
+                Fix: Enable "Anonymous" sign-in in Firebase Console &rarr; Authentication &rarr; Sign-in method.
+              </p>
+            </div>
+            <button onClick={() => setAuthError(null)} className="ml-auto text-red-400 hover:text-red-600">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+
         <div className="max-w-7xl mx-auto h-full flex flex-col">
           
           {activeTab === 'classes' && (
