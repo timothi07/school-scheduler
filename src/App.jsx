@@ -131,9 +131,9 @@ const INITIAL_TEACHERS = [
     name: "SL",
     timetable: {
       "Monday": ["10C", "9A", "8C", "", "8A", "8A", ""],
-      "Tuesday": ["10C", "9B", "9B", "9A", "BC", "", ""],
+      "Tuesday": ["10C", "9B", "9B", "9A", "8C", "", ""],
       "Wednesday": ["10C", "", "9A", "9B", "8C", "", ""],
-      "Thursday": ["10C", "9B", "9A", "", "BC", "", ""],
+      "Thursday": ["10C", "9B", "9A", "", "8C", "", ""],
       "Friday": ["10C", "", "9A", "", "9B", "8C", ""]
     }
   },
