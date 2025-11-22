@@ -80,11 +80,11 @@ const INITIAL_TEACHERS = [
   {
     name: "RIJI",
     timetable: {
-      "Monday": ["10A", "8A, 8C", "10C", "8A, 8B", "10B", "9A, 9C", "9A, 9B"],
-      "Tuesday": ["10A", "8A, 8C", "9C", "8A, 8B", "8C", "10B", "10A, 10C"],
-      "Wednesday": ["9A, 9C", "", "10A, 10C", "10B", "", "", "9A, 9B"],
-      "Thursday": ["9A, 9C", "8A, 8C", "10B", "", "8B", "9B", "10A, 10C"],
-      "Friday": ["", "8A, 8C", "9C", "", "10B", "10A, 10C", "9A, 9C"]
+      "Monday": ["10A", "8A, 8C", "10C", "", "10B", "", "9A, 9B"],
+      "Tuesday": ["10A", "8A, 8C", "9C", "", "8C", "9A, 9C", "10A, 10C"],
+      "Wednesday": ["9A, 9C", "", "10A, 10C", "8A, 8B", "", "", "9A, 9B"],
+      "Thursday": ["9A, 9C", "", "8A, 8C", "8A, 8B", "", "10B", "10A, 10C"],
+      "Friday": ["8C", "8A, 8C", "10C", "", "9C", "10A, 10C", "9A, 9C"]
     }
   },
   {
