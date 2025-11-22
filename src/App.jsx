@@ -57,6 +57,11 @@ const firebaseConfig = {
 };
 
 
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = "school-scheduler-v1";
+
 // --- Constants ---
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const PERIODS = [1, 2, 3, 4, 5, 6, 7]; 
