@@ -32,7 +32,8 @@ import {
   Clock,
   BookOpen,
   X,
-  Edit2
+  Edit2,
+  RefreshCw
 } from 'lucide-react';
 
 // --- Firebase Configuration ---
@@ -54,7 +55,7 @@ const appId = "school-scheduler-v1";
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const PERIODS = [1, 2, 3, 4, 5, 6, 7]; 
 
-// --- CLEAN DATA (No Subjects) ---
+// --- DEFAULT DATA (24 Teachers, Classes Only) ---
 const INITIAL_CLASSES = [
   { name: '5', divisions: ['A', 'B'] },
   { name: '6', divisions: ['A', 'B'] },
@@ -344,15 +345,15 @@ const ClassDirectory = ({ classes, onAddClass, onDeleteClass, onUpdateClass }) =
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
       {/* Class List */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col">
-        <div className="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
+        <div className="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl shrink-0">
           <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-blue-600" />
             Class Standards
           </h2>
           <p className="text-xs text-slate-500 mt-1">Add grades (e.g., 8, 9, 10)</p>
         </div>
-        <div className="p-4 border-b border-slate-100">
+        <div className="p-4 border-b border-slate-100 shrink-0">
           <form onSubmit={handleAddClass} className="flex gap-2">
             <input
               type="text"
@@ -386,8 +387,8 @@ const ClassDirectory = ({ classes, onAddClass, onDeleteClass, onUpdateClass }) =
       </div>
 
       {/* Divisions Manager */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col">
-        <div className="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
+        <div className="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl shrink-0">
           <h2 className="text-lg font-bold text-slate-800">Divisions</h2>
           <p className="text-xs text-slate-500 mt-1">
             {selectedClassId 
@@ -398,7 +399,7 @@ const ClassDirectory = ({ classes, onAddClass, onDeleteClass, onUpdateClass }) =
         
         {selectedClassId ? (
           <>
-            <div className="p-4 border-b border-slate-100">
+            <div className="p-4 border-b border-slate-100 shrink-0">
                <div className="flex gap-2">
                 <input
                   type="text"
@@ -463,15 +464,15 @@ const TeacherManager = ({ teachers, onSelectTeacher, onDeleteTeacher, onAddTeach
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col">
-      <div className="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col overflow-hidden">
+      <div className="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl shrink-0">
         <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
           <Users className="w-5 h-5 text-blue-600" />
           Staff Directory
         </h2>
       </div>
       
-      <div className="p-4 border-b border-slate-100">
+      <div className="p-4 border-b border-slate-100 shrink-0">
         <form onSubmit={handleAdd} className="flex gap-2 mb-3">
           <input
             type="text"
@@ -674,8 +675,8 @@ const TimetableEditor = ({ teacher, onUpdateTimetable, onClose, definedClasses }
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col relative">
-      <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col relative overflow-hidden">
+      <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl shrink-0">
         <div>
           <h2 className="text-lg font-bold text-slate-800">Master Timetable</h2>
           <p className="text-sm text-slate-500">Editing: <span className="font-medium text-blue-600">{teacher.name}</span></p>
@@ -846,7 +847,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col overflow-hidden">
-      <div className="p-5 bg-slate-800 text-white">
+      <div className="p-5 bg-slate-800 text-white shrink-0">
         <h2 className="text-xl font-bold flex items-center gap-2">
           <Clock className="w-6 h-6 text-blue-400" />
           Substitution Generator
@@ -854,9 +855,9 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
         <p className="text-slate-400 text-sm mt-1">Strict Mode: Substitutes must teach the target class.</p>
       </div>
 
-      <div className="grid grid-cols-12 h-full overflow-hidden">
+      <div className="grid grid-cols-12 h-full overflow-hidden min-h-0">
         {/* Controls */}
-        <div className="col-span-4 bg-slate-50 border-r border-slate-200 p-4 overflow-y-auto">
+        <div className="col-span-4 bg-slate-50 border-r border-slate-200 p-4 overflow-y-auto h-full min-h-0">
           <div className="mb-6">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Day</label>
             <select 
@@ -901,7 +902,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
         </div>
 
         {/* Results */}
-        <div className="col-span-8 p-6 overflow-y-auto bg-white">
+        <div className="col-span-8 p-6 overflow-y-auto h-full min-h-0 bg-white">
           {absentIds.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-400">
               <CheckCircle2 className="w-16 h-16 mb-4 text-slate-200" />
@@ -969,6 +970,7 @@ export default function App() {
   const [teachers, setTeachers] = useState([]);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
   const [activeTab, setActiveTab] = useState('manage'); 
   const [selectedTeacher, setSelectedTeacher] = useState(null);
 
@@ -994,7 +996,7 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // AUTO-SEED Logic
+  // AUTO-SEED Logic (Runs once if DB is empty)
   useEffect(() => {
     const seedDatabase = async () => {
       if (!user) return;
@@ -1101,6 +1103,71 @@ export default function App() {
     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'classes', classId));
   };
 
+  // FORCE RELOAD Action (Manual Trigger)
+  const handleForceReloadDefaults = async () => {
+    if (!user) {
+      alert("Please wait for authentication to finish.");
+      return;
+    }
+    if (!confirm("Force reload default teachers (RIJI, KPS, etc.)? This will overwrite their existing schedules with the default template. Continue?")) return;
+    
+    setImporting(true);
+    try {
+      const batch = writeBatch(db);
+      let operationCount = 0;
+
+      // 1. Classes
+      const existingClassNames = classes.map(c => c.name);
+      for (const cls of INITIAL_CLASSES) {
+        if (!existingClassNames.includes(cls.name)) {
+          const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'classes'));
+          batch.set(ref, {
+            name: cls.name,
+            divisions: cls.divisions,
+            createdAt: serverTimestamp()
+          });
+          operationCount++;
+        }
+      }
+
+      // 2. Teachers
+      const teacherMap = new Map(teachers.map(t => [t.name, t.id]));
+
+      for (const t of INITIAL_TEACHERS) {
+        if (teacherMap.has(t.name)) {
+          // UPDATE existing teacher (Overwrite timetable)
+          const existingId = teacherMap.get(t.name);
+          const ref = doc(db, 'artifacts', appId, 'public', 'data', 'teachers', existingId);
+          batch.update(ref, { 
+            timetable: t.timetable 
+          });
+          operationCount++;
+        } else {
+          // CREATE new teacher
+           const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'teachers'));
+           batch.set(ref, {
+             name: t.name,
+             timetable: t.timetable,
+             createdAt: serverTimestamp()
+           });
+           operationCount++;
+        }
+      }
+
+      if (operationCount > 0) {
+        await batch.commit();
+        alert(`Successfully reloaded defaults! Updated ${operationCount} records.`);
+      } else {
+        alert("All default data is already present and up to date.");
+      }
+
+    } catch (e) {
+      console.error(e);
+      alert("Error loading data: " + e.message);
+    }
+    setImporting(false);
+  };
+
   if (loading) return (
     <div className="h-screen w-full flex items-center justify-center bg-slate-50 text-slate-400">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -1108,9 +1175,9 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-800 font-sans flex flex-col">
+    <div className="min-h-screen bg-slate-100 text-slate-800 font-sans flex flex-col h-screen overflow-hidden">
       {/* Header */}
-      <header className="bg-slate-800 text-white shadow-md z-10">
+      <header className="bg-slate-800 text-white shadow-md z-10 shrink-0">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
              <div className="bg-blue-600 p-1.5 rounded text-white">
@@ -1119,35 +1186,46 @@ export default function App() {
              <h1 className="font-bold text-xl tracking-tight">SchoolScheduler</h1>
           </div>
           
-          <div className="flex bg-slate-700 rounded-lg p-1 gap-1 items-center">
+          <div className="flex items-center gap-2">
+            <div className="flex bg-slate-700 rounded-lg p-1 gap-1 items-center mr-2">
+              <button 
+                onClick={() => { setActiveTab('classes'); setSelectedTeacher(null); }}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'classes' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
+              >
+                Class Directory
+              </button>
+              <button 
+                onClick={() => { setActiveTab('manage'); setSelectedTeacher(null); }}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'manage' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
+              >
+                Timetables
+              </button>
+              <button 
+                onClick={() => setActiveTab('substitute')}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'substitute' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
+              >
+                Generate Subs
+              </button>
+            </div>
+
             <button 
-              onClick={() => { setActiveTab('classes'); setSelectedTeacher(null); }}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'classes' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
+              onClick={handleForceReloadDefaults}
+              disabled={importing}
+              className="p-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-md transition-colors"
+              title="Reload Default Teachers"
             >
-              Class Directory
-            </button>
-            <button 
-              onClick={() => { setActiveTab('manage'); setSelectedTeacher(null); }}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'manage' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
-            >
-              Timetables
-            </button>
-            <button 
-               onClick={() => setActiveTab('substitute')}
-               className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'substitute' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
-            >
-              Generate Subs
+              {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             </button>
           </div>
         </div>
       </header>
 
       {/* Content Area */}
-      <main className="flex-1 p-4 overflow-hidden">
-        <div className="max-w-7xl mx-auto h-[calc(100vh-100px)]">
+      <main className="flex-1 p-4 overflow-hidden min-h-0">
+        <div className="max-w-7xl mx-auto h-full flex flex-col">
           
           {activeTab === 'classes' && (
-            <div className="h-full max-w-4xl mx-auto">
+            <div className="h-full max-w-4xl mx-auto w-full">
               <ClassDirectory 
                 classes={classes} 
                 onAddClass={addClass}
@@ -1158,8 +1236,8 @@ export default function App() {
           )}
 
           {activeTab === 'manage' && (
-            <div className="grid grid-cols-12 gap-4 h-full">
-              <div className="col-span-3 h-full">
+            <div className="grid grid-cols-12 gap-4 h-full min-h-0">
+              <div className="col-span-3 h-full min-h-0">
                 <TeacherManager 
                   teachers={teachers}
                   onSelectTeacher={setSelectedTeacher}
@@ -1167,7 +1245,7 @@ export default function App() {
                   onAddTeacher={addTeacher}
                 />
               </div>
-              <div className="col-span-9 h-full">
+              <div className="col-span-9 h-full min-h-0">
                 {selectedTeacher ? (
                   <TimetableEditor 
                     teacher={selectedTeacher}
@@ -1182,6 +1260,11 @@ export default function App() {
                     </div>
                     <h3 className="text-lg font-medium text-slate-600 mb-1">Select a teacher to edit</h3>
                     <p className="max-w-sm text-sm opacity-75 mb-4">Click a name from the list on the left.</p>
+                    {teachers.length === 0 && (
+                       <button onClick={handleForceReloadDefaults} className="text-blue-600 underline text-sm flex items-center gap-1">
+                         <RefreshCw className="w-3 h-3" /> Load default teachers
+                       </button>
+                    )}
                   </div>
                 )}
               </div>
