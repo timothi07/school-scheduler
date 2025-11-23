@@ -180,7 +180,7 @@ const INITIAL_TEACHERS = [
     }
   },
   {
-    name: "PKV",
+    name: "SP",
     timetable: {
       "Monday": ["", "10B", "9C", "9B", "", "9A", "8C"],
       "Tuesday": ["", "10C", "10A", "9A", "", "10B", ""],
@@ -210,7 +210,7 @@ const INITIAL_TEACHERS = [
     }
   },
   {
-    name: "LCV",
+    name: "SHM",
     timetable: {
       "Monday": ["8C", "", "10B", "9C", "10A", "", ""],
       "Tuesday": ["8C", "10B", "", "10A", "9C", "", "8A"],
