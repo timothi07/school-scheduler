@@ -34,7 +34,10 @@ import {
   X,
   Edit2,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  FileText,
+  Printer,
+  Menu
 } from 'lucide-react';
 
 // --- Firebase Configuration ---
@@ -80,11 +83,11 @@ const INITIAL_TEACHERS = [
   {
     name: "RIJI",
     timetable: {
-      "Monday": ["10A", "8A, 8C", "10C", "", "10B", "", "9A, 9B"],
-      "Tuesday": ["10A", "8A, 8C", "9C", "", "8C", "9A, 9C", "10A, 10C"],
-      "Wednesday": ["9A, 9C", "", "10A, 10C", "8A, 8B", "", "", "9A, 9B"],
-      "Thursday": ["9A, 9C", "", "8A, 8C", "8A, 8B", "", "10B", "10A, 10C"],
-      "Friday": ["8C", "8A, 8C", "10C", "", "9C", "10A, 10C", "9A, 9C"]
+      "Monday": ["10A", "8A, 8C", "10C", "8A, 8B", "10B", "9A, 9C", "9A, 9B"],
+      "Tuesday": ["10A", "8A, 8C", "9C", "8A, 8B", "8C", "10B", "10A, 10C"],
+      "Wednesday": ["9A, 9C", "", "10A, 10C", "10B", "", "", "9A, 9B"],
+      "Thursday": ["9A, 9C", "8A, 8C", "10B", "", "8B", "9B", "10A, 10C"],
+      "Friday": ["", "8A, 8C", "9C", "", "10B", "10A, 10C", "9A, 9C"]
     }
   },
   {
@@ -131,9 +134,9 @@ const INITIAL_TEACHERS = [
     name: "SL",
     timetable: {
       "Monday": ["10C", "9A", "8C", "", "8A", "8A", ""],
-      "Tuesday": ["10C", "9B", "9B", "9A", "8C", "", ""],
+      "Tuesday": ["10C", "9B", "9B", "9A", "BC", "", ""],
       "Wednesday": ["10C", "", "9A", "9B", "8C", "", ""],
-      "Thursday": ["10C", "9B", "9A", "", "8C", "", ""],
+      "Thursday": ["10C", "9B", "9A", "", "BC", "", ""],
       "Friday": ["10C", "", "9A", "", "9B", "8C", ""]
     }
   },
@@ -202,7 +205,7 @@ const INITIAL_TEACHERS = [
     timetable: {
       "Monday": ["9C", "10C", "", "10B", "8B", "", "10A"],
       "Tuesday": ["9C", "", "8A", "10B", "9B", "8C", ""],
-      "Wednesday": ["", "8C", "8B", "10C", "10A", "", ""], // <--- CHANGED TO 8C
+      "Wednesday": ["", "8C", "8B", "10C", "10A", "", ""],
       "Thursday": ["10A", "9C", "9A", "10C", "8A", "9B", ""],
       "Friday": ["", "9C", "9C", "9A", "", "10B", ""]
     }
@@ -346,7 +349,6 @@ const ClassDirectory = ({ classes, onAddClass, onDeleteClass, onUpdateClass }) =
     await onUpdateClass(classId, updatedDivisions);
   };
 
-  // Sort classes alphabetically/numerically in UI
   const sortedClasses = [...classes].sort((a, b) => {
     const numA = parseInt(a.name) || 0;
     const numB = parseInt(b.name) || 0;
@@ -354,7 +356,7 @@ const ClassDirectory = ({ classes, onAddClass, onDeleteClass, onUpdateClass }) =
   });
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full overflow-hidden">
       {/* Class List */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
         <div className="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl shrink-0">
@@ -368,8 +370,8 @@ const ClassDirectory = ({ classes, onAddClass, onDeleteClass, onUpdateClass }) =
           <form onSubmit={handleAddClass} className="flex gap-2">
             <input
               type="text"
-              placeholder="Add Class (e.g. 8)..."
-              className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="Class..."
+              className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-full"
               value={newClassName}
               onChange={(e) => setNewClassName(e.target.value)}
             />
@@ -403,8 +405,8 @@ const ClassDirectory = ({ classes, onAddClass, onDeleteClass, onUpdateClass }) =
           <h2 className="text-lg font-bold text-slate-800">Divisions</h2>
           <p className="text-xs text-slate-500 mt-1">
             {selectedClassId 
-              ? `Managing divisions for Class ${classes.find(c => c.id === selectedClassId)?.name}` 
-              : 'Select a class on the left to manage divisions'}
+              ? `Divisions for Class ${classes.find(c => c.id === selectedClassId)?.name}` 
+              : 'Select a class to manage divisions'}
           </p>
         </div>
         
@@ -414,8 +416,8 @@ const ClassDirectory = ({ classes, onAddClass, onDeleteClass, onUpdateClass }) =
                <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Add Div (e.g. A)..."
-                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none uppercase"
+                  placeholder="Div..."
+                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none uppercase w-full"
                   value={newDivName}
                   onChange={(e) => setNewDivName(e.target.value)}
                   maxLength={2}
@@ -448,7 +450,7 @@ const ClassDirectory = ({ classes, onAddClass, onDeleteClass, onUpdateClass }) =
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-slate-400">
+          <div className="flex-1 flex items-center justify-center text-slate-400 bg-slate-50">
             <ArrowRight className="w-8 h-8 opacity-20" />
           </div>
         )}
@@ -469,7 +471,6 @@ const TeacherManager = ({ teachers, onSelectTeacher, onDeleteTeacher, onAddTeach
     setNewTeacherName('');
   };
 
-  // Sort alphabetically in UI
   const filteredTeachers = teachers
     .filter(t => t.name.toLowerCase().includes(filter.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -488,7 +489,7 @@ const TeacherManager = ({ teachers, onSelectTeacher, onDeleteTeacher, onAddTeach
           <input
             type="text"
             placeholder="Add Teacher..."
-            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all w-full"
             value={newTeacherName}
             onChange={(e) => setNewTeacherName(e.target.value)}
           />
@@ -524,14 +525,14 @@ const TeacherManager = ({ teachers, onSelectTeacher, onDeleteTeacher, onAddTeach
               className="group flex items-center justify-between p-3 rounded-lg hover:bg-blue-50 cursor-pointer border border-transparent hover:border-blue-100 transition-all"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold">
+                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold shrink-0">
                   {teacher.name.charAt(0).toUpperCase()}
                 </div>
-                <span className="font-medium text-slate-700 group-hover:text-blue-700">{teacher.name}</span>
+                <span className="font-medium text-slate-700 group-hover:text-blue-700 truncate">{teacher.name}</span>
               </div>
               <button 
                 onClick={(e) => { e.stopPropagation(); onDeleteTeacher(teacher.id); }}
-                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-all z-10"
+                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-all z-10 shrink-0"
                 title="Delete Teacher"
               >
                 <Trash2 className="w-4 h-4" />
@@ -598,7 +599,7 @@ const ClassSelectorModal = ({ value, definedClasses, onClose, onSave }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md flex flex-col max-h-[90vh]">
         <div className="p-4 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="font-bold text-lg text-slate-800">Select Classes & Subject</h3>
+          <h3 className="font-bold text-lg text-slate-800">Select Classes</h3>
           <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded-full"><X className="w-5 h-5" /></button>
         </div>
         
@@ -766,9 +767,13 @@ const TimetableEditor = ({ teacher, onUpdateTimetable, onClose, definedClasses }
 const SubstitutionGenerator = ({ teachers, definedClasses }) => {
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [absentIds, setAbsentIds] = useState([]);
+  // State to track manual assignments: { [uniqueSubstitutionId]: teacherId }
+  const [assignments, setAssignments] = useState({});
 
   const toggleAbsent = (id) => {
     setAbsentIds(prev => prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]);
+    // Reset assignments when absent list changes to avoid stale state
+    setAssignments({});
   };
 
   const validClassCodes = useMemo(() => {
@@ -812,6 +817,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
     return false;
   };
 
+  // Calculate all necessary substitutions
   const substitutionData = useMemo(() => {
     if (absentIds.length === 0) return [];
 
@@ -843,6 +849,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
           });
 
           results.push({
+            id: `${absentId}-${periodIndex}`, // Unique ID for this substitution slot
             period: periodIndex + 1,
             classInfo: subject,
             targetCodes: targetCodes,
@@ -856,19 +863,59 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
     return results.sort((a, b) => a.period - b.period);
   }, [selectedDay, absentIds, teachers, validClassCodes]);
 
+  // Helper to check if a teacher is already booked in this period (for a DIFFERENT class)
+  const isTeacherBookedInPeriod = (teacherId, period, currentSlotId) => {
+    // Look through all assignments
+    for (const [slotId, assignedTeacherId] of Object.entries(assignments)) {
+      // Split slotId to get period index. ID format: "absentTeacherId-periodIndex"
+      // Wait, multiple teachers absent at same period? Yes.
+      // We need to check if the slot corresponds to the SAME period.
+      
+      // Let's find the substitution item for this slotId to get its period
+      const assignedItem = substitutionData.find(item => item.id === slotId);
+      
+      if (assignedItem && assignedItem.period === period) {
+         // This assignment is for the same period.
+         // If it's a different slot AND the teacher matches, they are booked.
+         if (slotId !== currentSlotId && assignedTeacherId === teacherId) {
+           return true;
+         }
+      }
+    }
+    return false;
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col overflow-hidden">
-      <div className="p-5 bg-slate-800 text-white shrink-0">
-        <h2 className="text-xl font-bold flex items-center gap-2">
-          <Clock className="w-6 h-6 text-blue-400" />
-          Substitution Generator
-        </h2>
-        <p className="text-slate-400 text-sm mt-1">Strict Mode: Substitutes must teach the target class.</p>
+      <div className="p-5 bg-slate-800 text-white shrink-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
+        <div>
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <Clock className="w-6 h-6 text-blue-400" />
+            Substitution Generator
+          </h2>
+          <p className="text-slate-400 text-sm mt-1">Select substitutes for each class.</p>
+        </div>
+        <button 
+          onClick={handlePrint}
+          className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-sm shadow-sm transition-all"
+        >
+          <Printer className="w-4 h-4" /> Download / Print PDF
+        </button>
       </div>
 
-      <div className="grid grid-cols-12 h-full overflow-hidden min-h-0">
-        {/* Controls */}
-        <div className="col-span-4 bg-slate-50 border-r border-slate-200 p-4 overflow-y-auto h-full min-h-0">
+      {/* Print Header (Only visible when printing) */}
+      <div className="hidden print:block p-8 border-b border-slate-200 text-center">
+        <h1 className="text-3xl font-bold text-slate-800 mb-2">Substitution Schedule</h1>
+        <p className="text-slate-600 text-lg">Date: {selectedDay} | Generated by SchoolScheduler</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 h-full overflow-hidden min-h-0 print:block">
+        {/* Controls (Hidden on Print) */}
+        <div className="col-span-1 lg:col-span-4 bg-slate-50 border-b lg:border-b-0 lg:border-r border-slate-200 p-4 overflow-y-auto h-full min-h-0 print:hidden">
           <div className="mb-6">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Day</label>
             <select 
@@ -892,7 +939,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
                   }
                 `}>
                   <div className={`
-                    w-5 h-5 rounded border flex items-center justify-center
+                    w-5 h-5 rounded border flex items-center justify-center shrink-0
                     ${absentIds.includes(t.id) ? 'bg-red-500 border-red-500' : 'border-slate-300 bg-white'}
                   `}>
                     {absentIds.includes(t.id) && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
@@ -913,60 +960,76 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
         </div>
 
         {/* Results */}
-        <div className="col-span-8 p-6 overflow-y-auto h-full min-h-0 bg-white">
+        <div className="col-span-1 lg:col-span-8 p-6 overflow-y-auto h-full min-h-0 bg-white print:h-auto print:overflow-visible">
           {absentIds.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400">
+            <div className="h-full flex flex-col items-center justify-center text-slate-400 print:hidden">
               <CheckCircle2 className="w-16 h-16 mb-4 text-slate-200" />
               <p className="text-lg font-medium">No teachers marked absent.</p>
             </div>
           ) : substitutionData.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-green-600">
+            <div className="h-full flex flex-col items-center justify-center text-green-600 print:hidden">
               <CheckCircle2 className="w-16 h-16 mb-4" />
               <p className="text-lg font-bold">No Substitutions Needed</p>
               <p className="text-slate-500 text-sm">Absent teachers have no classes today.</p>
             </div>
           ) : (
-            <div className="space-y-6">
-              <div className="flex justify-between items-end border-b pb-4 mb-4">
+            <div className="space-y-4 print:space-y-2">
+              <div className="flex justify-between items-end border-b pb-4 mb-4 print:hidden">
                 <div>
                   <h3 className="text-2xl font-bold text-slate-800">Substitution Plan</h3>
                   <p className="text-slate-500 text-sm mt-1">For <span className="font-medium text-blue-600">{selectedDay}</span></p>
                 </div>
               </div>
 
-              {substitutionData.map((item, idx) => (
-                <div key={idx} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
-                     <div className="flex items-center gap-3">
-                       <span className="bg-slate-800 text-white text-xs font-bold px-2 py-1 rounded">PERIOD {item.period}</span>
-                       <span className="font-bold text-slate-700">{item.classInfo}</span>
-                     </div>
-                     <span className="text-xs font-medium text-red-500 bg-red-50 px-2 py-1 rounded-full border border-red-100">
-                       Absent: {item.absentTeacherName}
-                     </span>
-                  </div>
-                  <div className="p-4">
-                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                      Substitutes
+              {substitutionData.map((item, idx) => {
+                const assignedTeacherId = assignments[item.id] || "";
+                return (
+                  <div key={idx} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden print:border-black print:shadow-none print:break-inside-avoid">
+                    <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 print:bg-slate-100 print:border-black">
+                       <div className="flex items-center gap-3">
+                         <span className="bg-slate-800 text-white text-xs font-bold px-2 py-1 rounded print:bg-black print:text-white">PERIOD {item.period}</span>
+                         <span className="font-bold text-slate-700 text-lg">{item.classInfo}</span>
+                       </div>
+                       <span className="text-xs font-medium text-red-500 bg-red-50 px-2 py-1 rounded-full border border-red-100 print:text-black print:border-black">
+                         Absent: {item.absentTeacherName}
+                       </span>
                     </div>
-                    {item.replacements.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {item.replacements.map(r => (
-                          <div key={r.id} className="bg-green-50 text-green-700 border border-green-200 px-3 py-1.5 rounded-md text-sm font-bold flex items-center gap-2 shadow-sm">
-                             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                             {r.name}
-                          </div>
-                        ))}
+                    <div className="p-4 bg-white">
+                      <div className="print:hidden">
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Assign Substitute</label>
+                        <select 
+                          className="w-full p-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none"
+                          value={assignedTeacherId}
+                          onChange={(e) => setAssignments(prev => ({ ...prev, [item.id]: e.target.value }))}
+                        >
+                          <option value="">-- Select Teacher --</option>
+                          {item.replacements.map(r => {
+                            const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
+                            return (
+                              <option key={r.id} value={r.id} disabled={isBooked} className={isBooked ? "text-slate-300 bg-slate-50" : ""}>
+                                {r.name} {isBooked ? "(Busy)" : ""}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        {item.replacements.length === 0 && (
+                          <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> No subject teachers available.
+                          </p>
+                        )}
                       </div>
-                    ) : (
-                      <div className="bg-red-50 text-red-600 border border-red-100 px-3 py-2 rounded-md text-sm italic flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4" /> 
-                        No subject teacher available for this period.
+                      
+                      {/* Print View: Only show selected teacher */}
+                      <div className="hidden print:block">
+                        <span className="font-bold text-sm uppercase text-slate-500 mr-2">Substitute:</span>
+                        <span className="font-bold text-lg">
+                          {teachers.find(t => t.id === assignedTeacherId)?.name || "__________________"}
+                        </span>
                       </div>
-                    )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -985,13 +1048,19 @@ export default function App() {
   const [authError, setAuthError] = useState(null);
   const [activeTab, setActiveTab] = useState('manage'); 
   const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Mobile Menu State
 
   // Auth & Initial Data Load
   useEffect(() => {
     const initAuth = async () => {
       try {
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
+          try {
+            await signInWithCustomToken(auth, __initial_auth_token);
+          } catch (e) {
+            console.warn("Custom token failed, trying anonymous:", e);
+            await signInAnonymously(auth);
+          }
         } else {
           await signInAnonymously(auth);
         }
@@ -1015,7 +1084,6 @@ export default function App() {
       if (!user) return;
       
       try {
-        // Check if database is empty by fetching one teacher
         const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'teachers'));
         const snapshot = await getDocs(q);
         
@@ -1023,13 +1091,11 @@ export default function App() {
           console.log("Seeding database...");
           const batch = writeBatch(db);
 
-          // Seed Classes
           INITIAL_CLASSES.forEach(cls => {
              const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'classes'));
              batch.set(ref, { ...cls, createdAt: serverTimestamp() });
           });
 
-          // Seed Teachers
           INITIAL_TEACHERS.forEach(t => {
              const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'teachers'));
              batch.set(ref, { ...t, createdAt: serverTimestamp() });
@@ -1048,7 +1114,7 @@ export default function App() {
     }
   }, [user, loading]);
 
-  // Fetch Teachers
+  // Fetch Data
   useEffect(() => {
     if (!user) return;
 
@@ -1072,7 +1138,7 @@ export default function App() {
     };
   }, [user]);
 
-  // Actions - Teachers
+  // --- ACTIONS (Add, Update, Delete) ---
   const addTeacher = async (name) => {
     if (!user) return;
     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'teachers'), {
@@ -1094,7 +1160,6 @@ export default function App() {
     if (selectedTeacher?.id === teacherId) setSelectedTeacher(null);
   };
 
-  // Actions - Classes
   const addClass = async (name) => {
     if (!user) return;
     if(classes.some(c => c.name === name)) return alert("Class exists");
@@ -1116,67 +1181,52 @@ export default function App() {
     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'classes', classId));
   };
 
-  // FORCE RELOAD Action (Manual Trigger)
+  // FORCE RELOAD Action
   const handleForceReloadDefaults = async () => {
     if (!user) {
       alert("Please wait for authentication to finish.");
       return;
     }
-    if (!confirm("Force reload default teachers (RIJI, KPS, etc.)? This will overwrite their existing schedules with the default template. Continue?")) return;
+    if (!confirm("Force reload default teachers? This will overwrite their schedules. Continue?")) return;
     
     setImporting(true);
     try {
       const batch = writeBatch(db);
       let operationCount = 0;
 
-      // 1. Classes
       const existingClassNames = classes.map(c => c.name);
       for (const cls of INITIAL_CLASSES) {
         if (!existingClassNames.includes(cls.name)) {
           const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'classes'));
-          batch.set(ref, {
-            name: cls.name,
-            divisions: cls.divisions,
-            createdAt: serverTimestamp()
-          });
+          batch.set(ref, { name: cls.name, divisions: cls.divisions, createdAt: serverTimestamp() });
           operationCount++;
         }
       }
 
-      // 2. Teachers
       const teacherMap = new Map(teachers.map(t => [t.name, t.id]));
-
       for (const t of INITIAL_TEACHERS) {
         if (teacherMap.has(t.name)) {
-          // UPDATE existing teacher (Overwrite timetable)
           const existingId = teacherMap.get(t.name);
           const ref = doc(db, 'artifacts', appId, 'public', 'data', 'teachers', existingId);
-          batch.update(ref, { 
-            timetable: t.timetable 
-          });
+          batch.update(ref, { timetable: t.timetable });
           operationCount++;
         } else {
-          // CREATE new teacher
            const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'teachers'));
-           batch.set(ref, {
-             name: t.name,
-             timetable: t.timetable,
-             createdAt: serverTimestamp()
-           });
+           batch.set(ref, { name: t.name, timetable: t.timetable, createdAt: serverTimestamp() });
            operationCount++;
         }
       }
 
       if (operationCount > 0) {
         await batch.commit();
-        alert(`Successfully reloaded defaults! Updated ${operationCount} records.`);
+        alert(`Updated ${operationCount} records.`);
       } else {
-        alert("All default data is already present and up to date.");
+        alert("All data is up to date.");
       }
 
     } catch (e) {
       console.error(e);
-      alert("Error loading data: " + e.message);
+      alert("Error: " + e.message);
     }
     setImporting(false);
   };
@@ -1190,22 +1240,24 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 font-sans flex flex-col h-screen overflow-hidden">
       {/* Header */}
-      <header className="bg-slate-800 text-white shadow-md z-10 shrink-0">
+      <header className="bg-slate-800 text-white shadow-md z-10 shrink-0 print:hidden">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
              <div className="bg-blue-600 p-1.5 rounded text-white">
                <Calendar className="w-5 h-5" />
              </div>
-             <h1 className="font-bold text-xl tracking-tight">SchoolScheduler</h1>
+             <h1 className="font-bold text-xl tracking-tight hidden md:block">SchoolScheduler</h1>
+             <h1 className="font-bold text-xl tracking-tight md:hidden">SS</h1>
           </div>
           
-          <div className="flex items-center gap-2">
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-2">
             <div className="flex bg-slate-700 rounded-lg p-1 gap-1 items-center mr-2">
               <button 
                 onClick={() => { setActiveTab('classes'); setSelectedTeacher(null); }}
                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'classes' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
               >
-                Class Directory
+                Directory
               </button>
               <button 
                 onClick={() => { setActiveTab('manage'); setSelectedTeacher(null); }}
@@ -1220,7 +1272,6 @@ export default function App() {
                 Generate Subs
               </button>
             </div>
-
             <button 
               onClick={handleForceReloadDefaults}
               disabled={importing}
@@ -1230,21 +1281,53 @@ export default function App() {
               {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             </button>
           </div>
+
+          {/* Mobile Menu Button */}
+          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-slate-300">
+            <Menu className="w-6 h-6" />
+          </button>
         </div>
+
+        {/* Mobile Nav Dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-slate-700 p-4 space-y-2 border-t border-slate-600">
+             <button 
+                onClick={() => { setActiveTab('classes'); setSelectedTeacher(null); setMobileMenuOpen(false); }}
+                className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === 'classes' ? 'bg-white text-slate-800' : 'text-slate-300'}`}
+              >
+                Class Directory
+              </button>
+              <button 
+                onClick={() => { setActiveTab('manage'); setSelectedTeacher(null); setMobileMenuOpen(false); }}
+                className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === 'manage' ? 'bg-white text-slate-800' : 'text-slate-300'}`}
+              >
+                Timetables
+              </button>
+              <button 
+                onClick={() => { setActiveTab('substitute'); setMobileMenuOpen(false); }}
+                className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === 'substitute' ? 'bg-white text-slate-800' : 'text-slate-300'}`}
+              >
+                Generate Subs
+              </button>
+              <button 
+              onClick={handleForceReloadDefaults}
+              className="block w-full text-left px-4 py-2 rounded-md text-sm font-medium text-slate-300 flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" /> Reload Defaults
+            </button>
+          </div>
+        )}
       </header>
 
       {/* Content Area */}
-      <main className="flex-1 p-4 overflow-hidden min-h-0 relative">
+      <main className="flex-1 p-2 md:p-4 overflow-hidden min-h-0 relative">
         
         {authError && (
-          <div className="absolute top-4 left-4 right-4 z-50 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-sm flex items-start gap-3 animate-in slide-in-from-top-2">
+          <div className="absolute top-4 left-4 right-4 z-50 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-sm flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
             <div>
               <h3 className="font-bold text-sm">Authentication Error</h3>
               <p className="text-sm mt-1 opacity-90">{authError}</p>
-              <p className="text-xs mt-2 font-medium text-red-800">
-                Fix: Enable "Anonymous" sign-in in Firebase Console &rarr; Authentication &rarr; Sign-in method.
-              </p>
             </div>
             <button onClick={() => setAuthError(null)} className="ml-auto text-red-400 hover:text-red-600">
               <X className="w-5 h-5" />
@@ -1255,7 +1338,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto h-full flex flex-col">
           
           {activeTab === 'classes' && (
-            <div className="h-full max-w-4xl mx-auto w-full">
+            <div className="h-full w-full">
               <ClassDirectory 
                 classes={classes} 
                 onAddClass={addClass}
@@ -1266,8 +1349,8 @@ export default function App() {
           )}
 
           {activeTab === 'manage' && (
-            <div className="grid grid-cols-12 gap-4 h-full min-h-0">
-              <div className="col-span-3 h-full min-h-0">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-0">
+              <div className="col-span-1 lg:col-span-3 h-[40vh] lg:h-full min-h-0">
                 <TeacherManager 
                   teachers={teachers}
                   onSelectTeacher={setSelectedTeacher}
@@ -1275,7 +1358,7 @@ export default function App() {
                   onAddTeacher={addTeacher}
                 />
               </div>
-              <div className="col-span-9 h-full min-h-0">
+              <div className="col-span-1 lg:col-span-9 h-full min-h-0">
                 {selectedTeacher ? (
                   <TimetableEditor 
                     teacher={selectedTeacher}
@@ -1284,17 +1367,12 @@ export default function App() {
                     onClose={() => setSelectedTeacher(null)}
                   />
                 ) : (
-                  <div className="h-full bg-white rounded-xl border border-slate-200 border-dashed flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+                  <div className="hidden lg:flex h-full bg-white rounded-xl border border-slate-200 border-dashed flex-col items-center justify-center text-slate-400 p-8 text-center">
                     <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
                       <ArrowRight className="w-8 h-8 text-slate-300" />
                     </div>
-                    <h3 className="text-lg font-medium text-slate-600 mb-1">Select a teacher to edit</h3>
-                    <p className="max-w-sm text-sm opacity-75 mb-4">Click a name from the list on the left.</p>
-                    {teachers.length === 0 && (
-                       <button onClick={handleForceReloadDefaults} className="text-blue-600 underline text-sm flex items-center gap-1">
-                         <RefreshCw className="w-3 h-3" /> Load default teachers
-                       </button>
-                    )}
+                    <h3 className="text-lg font-medium text-slate-600 mb-1">Select a teacher</h3>
+                    <p className="max-w-sm text-sm opacity-75">Click a name from the list to edit their timetable.</p>
                   </div>
                 )}
               </div>
