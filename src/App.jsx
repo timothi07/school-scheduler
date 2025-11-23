@@ -35,7 +35,6 @@ import {
   Edit2,
   RefreshCw,
   AlertTriangle,
-  FileText,
   Printer,
   Menu
 } from 'lucide-react';
