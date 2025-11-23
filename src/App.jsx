@@ -68,7 +68,7 @@ const appId = "school-scheduler-v1";
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const PERIODS = [1, 2, 3, 4, 5, 6, 7]; 
 
-// --- DEFAULT DATA ---
+// --- DEFAULT DATA (24 Teachers, Classes Only) ---
 const INITIAL_CLASSES = [
   { name: '5', divisions: ['A', 'B'] },
   { name: '6', divisions: ['A', 'B'] },
@@ -355,7 +355,7 @@ const ClassDirectory = ({ classes, onAddClass, onDeleteClass, onUpdateClass }) =
   });
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full overflow-hidden">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full overflow-hidden print:hidden">
       {/* Class List */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
         <div className="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl shrink-0">
@@ -686,7 +686,7 @@ const TimetableEditor = ({ teacher, onUpdateTimetable, onClose, definedClasses }
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col relative overflow-hidden">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col relative overflow-hidden print:hidden">
       <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl shrink-0">
         <div>
           <h2 className="text-lg font-bold text-slate-800">Master Timetable</h2>
@@ -766,6 +766,7 @@ const TimetableEditor = ({ teacher, onUpdateTimetable, onClose, definedClasses }
 const SubstitutionGenerator = ({ teachers, definedClasses }) => {
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [absentIds, setAbsentIds] = useState([]);
+  // State to track manual assignments: { [uniqueSubstitutionId]: teacherId }
   const [assignments, setAssignments] = useState({});
 
   const toggleAbsent = (id) => {
@@ -880,7 +881,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
       {/* Style Injection for Print */}
       <style>{`
         @media print {
-          @page { margin: 15mm; size: auto; }
+          @page { margin: 10mm; size: auto; }
           body, html, #root { 
             height: auto !important; 
             overflow: visible !important; 
@@ -904,8 +905,10 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
             width: 100%;
           }
 
-          /* Table handling */
-          table { width: 100%; border-collapse: collapse; }
+          /* Grid Table Styles */
+          table { width: 100%; border-collapse: collapse; border: 2px solid black; }
+          th, td { border: 1px solid black; padding: 8px; text-align: center; vertical-align: middle; }
+          th { background-color: #f3f4f6; font-weight: bold; }
           thead { display: table-header-group; }
           tr { page-break-inside: avoid; }
         }
@@ -1042,50 +1045,69 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
       </div>
 
       {/* --- PRINT VIEW (VISIBILITY TOGGLED BY CSS) --- */}
-      <div className="print-only hidden bg-white text-black p-8">
-        <div className="text-center mb-8 border-b-2 border-slate-800 pb-4">
-          <h1 className="text-3xl font-bold mb-2 uppercase tracking-wide">Substitution Schedule</h1>
-          <p className="text-lg text-slate-600">Date: <span className="font-bold text-slate-900">{selectedDay}</span></p>
+      <div className="print-only hidden bg-white text-black p-4">
+        <div className="text-center mb-6">
+          <h1 className="text-xl font-bold mb-1 uppercase">Substitution Schedule</h1>
+          <p className="text-sm text-slate-600">{new Date().toLocaleDateString()} | {selectedDay}</p>
         </div>
         
-        <table className="w-full text-left border-collapse">
+        <table className="w-full border-collapse border border-black text-sm">
           <thead>
-            <tr className="bg-slate-100 border-b-2 border-slate-800">
-              <th className="p-3 font-bold text-slate-900 w-24 border-r border-slate-300 text-center">Period</th>
-              <th className="p-3 font-bold text-slate-900 w-40 border-r border-slate-300">Class</th>
-              <th className="p-3 font-bold text-slate-900 w-64 border-r border-slate-300">Absent Teacher</th>
-              <th className="p-3 font-bold text-slate-900">Substitute Teacher</th>
+            <tr>
+              <th className="border border-black p-2 w-24 bg-gray-100"></th>
+              {PERIODS.map(p => (
+                <th key={p} className="border border-black p-2 bg-gray-100 font-bold text-center">
+                  {p}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {substitutionData.length === 0 ? (
-              <tr>
-                <td colSpan="4" className="p-8 text-center text-slate-500 italic border-b border-slate-200">
-                  No substitutions needed for this day.
-                </td>
-              </tr>
-            ) : (
-              substitutionData.map((item, idx) => {
-                const assignedTeacherId = assignments[item.id];
-                const assignedName = teachers.find(t => t.id === assignedTeacherId)?.name;
-                return (
-                  <tr key={idx} className="border-b border-slate-300">
-                    <td className="p-3 font-bold text-slate-900 text-center border-r border-slate-300">{item.period}</td>
-                    <td className="p-3 font-bold text-slate-800 border-r border-slate-300">{item.classInfo}</td>
-                    <td className="p-3 text-red-600 font-bold border-r border-slate-300">{item.absentTeacherName}</td>
-                    <td className="p-3 font-bold text-slate-900 bg-slate-50">
-                      {assignedName || "____________________"}
-                    </td>
-                  </tr>
-                );
-              })
-            )}
+            {absentIds.map(absentId => {
+              const teacher = teachers.find(t => t.id === absentId);
+              if (!teacher) return null;
+              
+              return (
+                <tr key={absentId}>
+                  <td className="border border-black p-2 font-bold bg-gray-50 text-center align-middle">
+                    {teacher.name}
+                  </td>
+                  {PERIODS.map((p, index) => {
+                    const slotId = `${absentId}-${index}`; 
+                    const item = substitutionData.find(d => d.id === slotId);
+                    
+                    let content = "---";
+                    let subName = "";
+                    
+                    if (item) {
+                       content = item.classInfo;
+                       const assignedId = assignments[slotId];
+                       const assignedTeacher = teachers.find(t => t.id === assignedId);
+                       subName = assignedTeacher ? assignedTeacher.name : "";
+                    }
+                    
+                    return (
+                      <td key={p} className="border border-black p-1 h-14 text-center align-middle">
+                        {item ? (
+                          <div className="flex flex-col justify-center h-full">
+                            <span className="text-xs mb-1 font-medium">{content}</span>
+                            {subName && (
+                              <span className="font-bold text-black text-sm border-t border-dotted border-gray-400 pt-1 mt-1 block">
+                                {subName}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-300 text-xs">---</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
-        
-        <div className="mt-8 pt-4 border-t border-slate-200 text-center text-slate-400 text-xs">
-          Generated by SchoolScheduler
-        </div>
       </div>
     </div>
   );
@@ -1291,10 +1313,10 @@ export default function App() {
   );
 
   return (
-    <div className="h-screen w-full flex flex-col overflow-hidden bg-slate-100 text-slate-800 font-sans">
+    <div className="h-screen w-full flex flex-col overflow-hidden bg-slate-100 text-slate-800 font-sans print:h-auto print:overflow-visible">
       
       {/* --- SCREEN LAYOUT --- */}
-      <div className="screen-only flex flex-col h-full overflow-hidden">
+      <div className="screen-only flex-1 flex flex-col h-full overflow-hidden">
         <header className="bg-slate-800 text-white shadow-md z-10 shrink-0">
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div className="flex items-center gap-2">
