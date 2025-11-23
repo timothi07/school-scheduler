@@ -355,7 +355,7 @@ const ClassDirectory = ({ classes, onAddClass, onDeleteClass, onUpdateClass }) =
   });
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full overflow-hidden print:hidden">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full overflow-hidden">
       {/* Class List */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
         <div className="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl shrink-0">
@@ -686,7 +686,7 @@ const TimetableEditor = ({ teacher, onUpdateTimetable, onClose, definedClasses }
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col relative overflow-hidden print:hidden">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col relative overflow-hidden">
       <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl shrink-0">
         <div>
           <h2 className="text-lg font-bold text-slate-800">Master Timetable</h2>
@@ -866,10 +866,6 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
   const isTeacherBookedInPeriod = (teacherId, period, currentSlotId) => {
     // Look through all assignments
     for (const [slotId, assignedTeacherId] of Object.entries(assignments)) {
-      // Split slotId to get period index. ID format: "absentTeacherId-periodIndex"
-      // Wait, multiple teachers absent at same period? Yes.
-      // We need to check if the slot corresponds to the SAME period.
-      
       // Let's find the substitution item for this slotId to get its period
       const assignedItem = substitutionData.find(item => item.id === slotId);
       
@@ -889,156 +885,167 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col overflow-hidden">
+    <div className="flex flex-col h-full w-full">
       {/* Style Injection for Print */}
       <style>{`
         @media print {
-          @page { margin: 20mm; size: auto; }
+          @page { margin: 15mm; size: auto; }
+          body, html, #root { 
+            height: auto !important; 
+            overflow: visible !important; 
+            background: white !important;
+            width: 100% !important;
+          }
+          
+          /* Hide everything by default */
           body * {
-            visibility: hidden;
+            display: none;
           }
+
+          /* Only show the print section and its children */
           #print-section, #print-section * {
-            visibility: visible;
+            display: block;
           }
-          #print-section {
-            position: absolute;
-            left: 0;
-            top: 0;
+
+          /* Ensure proper table layout */
+          #print-section table {
+            display: table;
             width: 100%;
-            margin: 0;
-            padding: 0;
-            background: white;
+            border-collapse: collapse;
           }
-          /* Ensure table rows don't break */
-          tr { page-break-inside: avoid; }
+          #print-section thead { display: table-header-group; }
+          #print-section tbody { display: table-row-group; }
+          #print-section tr { display: table-row; page-break-inside: avoid; }
+          #print-section td, #print-section th { display: table-cell; }
         }
       `}</style>
 
-      <div className="p-5 bg-slate-800 text-white shrink-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
-        <div>
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Clock className="w-6 h-6 text-blue-400" />
-            Substitution Generator
-          </h2>
-          <p className="text-slate-400 text-sm mt-1">Select substitutes for each class.</p>
-        </div>
-        <button 
-          onClick={handlePrint}
-          className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-sm shadow-sm transition-all"
-        >
-          <Printer className="w-4 h-4" /> Download / Print PDF
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 h-full overflow-hidden min-h-0 print:hidden">
-        {/* Controls (Hidden on Print) */}
-        <div className="col-span-1 lg:col-span-4 bg-slate-50 border-b lg:border-b-0 lg:border-r border-slate-200 p-4 overflow-y-auto h-full min-h-0">
-          <div className="mb-6">
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Day</label>
-            <select 
-              value={selectedDay} 
-              onChange={(e) => setSelectedDay(e.target.value)}
-              className="w-full p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700"
-            >
-              {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </div>
-
+      {/* --- SCREEN UI (HIDDEN ON PRINT) --- */}
+      <div className="flex-1 flex flex-col overflow-hidden print:hidden">
+        <div className="p-5 bg-slate-800 text-white shrink-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Mark Absent Staff</label>
-            <div className="space-y-2">
-              {teachers.map(t => (
-                <label key={t.id} className={`
-                  flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all
-                  ${absentIds.includes(t.id) 
-                    ? 'bg-red-50 border-red-200 shadow-sm' 
-                    : 'bg-white border-slate-200 hover:border-blue-300'
-                  }
-                `}>
-                  <div className={`
-                    w-5 h-5 rounded border flex items-center justify-center shrink-0
-                    ${absentIds.includes(t.id) ? 'bg-red-500 border-red-500' : 'border-slate-300 bg-white'}
-                  `}>
-                    {absentIds.includes(t.id) && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-                  </div>
-                  <input 
-                    type="checkbox" 
-                    className="hidden"
-                    checked={absentIds.includes(t.id)}
-                    onChange={() => toggleAbsent(t.id)}
-                  />
-                  <span className={`font-medium text-sm ${absentIds.includes(t.id) ? 'text-red-700' : 'text-slate-700'}`}>
-                    {t.name}
-                  </span>
-                </label>
-              ))}
-            </div>
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Clock className="w-6 h-6 text-blue-400" />
+              Substitution Generator
+            </h2>
+            <p className="text-slate-400 text-sm mt-1">Select substitutes for each class.</p>
           </div>
+          <button 
+            onClick={handlePrint}
+            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-sm shadow-sm transition-all"
+          >
+            <Printer className="w-4 h-4" /> Download / Print PDF
+          </button>
         </div>
 
-        {/* Results */}
-        <div className="col-span-1 lg:col-span-8 p-6 overflow-y-auto h-full min-h-0 bg-white">
-          {absentIds.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400">
-              <CheckCircle2 className="w-16 h-16 mb-4 text-slate-200" />
-              <p className="text-lg font-medium">No teachers marked absent.</p>
+        <div className="grid grid-cols-1 lg:grid-cols-12 h-full overflow-hidden min-h-0">
+          <div className="col-span-1 lg:col-span-4 bg-slate-50 border-b lg:border-b-0 lg:border-r border-slate-200 p-4 overflow-y-auto h-full min-h-0">
+            <div className="mb-6">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Day</label>
+              <select 
+                value={selectedDay} 
+                onChange={(e) => setSelectedDay(e.target.value)}
+                className="w-full p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700"
+              >
+                {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
             </div>
-          ) : substitutionData.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-green-600">
-              <CheckCircle2 className="w-16 h-16 mb-4" />
-              <p className="text-lg font-bold">No Substitutions Needed</p>
-              <p className="text-slate-500 text-sm">Absent teachers have no classes today.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex justify-between items-end border-b pb-4 mb-4">
-                <div>
-                  <h3 className="text-2xl font-bold text-slate-800">Substitution Plan</h3>
-                  <p className="text-slate-500 text-sm mt-1">For <span className="font-medium text-blue-600">{selectedDay}</span></p>
-                </div>
-              </div>
 
-              {substitutionData.map((item, idx) => {
-                const assignedTeacherId = assignments[item.id] || "";
-                return (
-                  <div key={idx} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
-                       <div className="flex items-center gap-3">
-                         <span className="bg-slate-800 text-white text-xs font-bold px-2 py-1 rounded">PERIOD {item.period}</span>
-                         <span className="font-bold text-slate-700 text-lg">{item.classInfo}</span>
-                       </div>
-                       <span className="text-xs font-medium text-red-500 bg-red-50 px-2 py-1 rounded-full border border-red-100">
-                         Absent: {item.absentTeacherName}
-                       </span>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Mark Absent Staff</label>
+              <div className="space-y-2">
+                {teachers.map(t => (
+                  <label key={t.id} className={`
+                    flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all
+                    ${absentIds.includes(t.id) 
+                      ? 'bg-red-50 border-red-200 shadow-sm' 
+                      : 'bg-white border-slate-200 hover:border-blue-300'
+                    }
+                  `}>
+                    <div className={`
+                      w-5 h-5 rounded border flex items-center justify-center shrink-0
+                      ${absentIds.includes(t.id) ? 'bg-red-500 border-red-500' : 'border-slate-300 bg-white'}
+                    `}>
+                      {absentIds.includes(t.id) && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
                     </div>
-                    <div className="p-4 bg-white">
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Assign Substitute</label>
-                      <select 
-                        className="w-full p-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none"
-                        value={assignedTeacherId}
-                        onChange={(e) => setAssignments(prev => ({ ...prev, [item.id]: e.target.value }))}
-                      >
-                        <option value="">-- Select Teacher --</option>
-                        {item.replacements.map(r => {
-                          const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
-                          return (
-                            <option key={r.id} value={r.id} disabled={isBooked} className={isBooked ? "text-slate-300 bg-slate-50" : ""}>
-                              {r.name} {isBooked ? "(Busy)" : ""}
-                            </option>
-                          );
-                        })}
-                      </select>
-                      {item.replacements.length === 0 && (
-                        <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" /> No subject teachers available.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                    <input 
+                      type="checkbox" 
+                      className="hidden"
+                      checked={absentIds.includes(t.id)}
+                      onChange={() => toggleAbsent(t.id)}
+                    />
+                    <span className={`font-medium text-sm ${absentIds.includes(t.id) ? 'text-red-700' : 'text-slate-700'}`}>
+                      {t.name}
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
-          )}
+          </div>
+
+          <div className="col-span-1 lg:col-span-8 p-6 overflow-y-auto h-full min-h-0 bg-white">
+            {absentIds.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                <CheckCircle2 className="w-16 h-16 mb-4 text-slate-200" />
+                <p className="text-lg font-medium">No teachers marked absent.</p>
+              </div>
+            ) : substitutionData.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-green-600">
+                <CheckCircle2 className="w-16 h-16 mb-4" />
+                <p className="text-lg font-bold">No Substitutions Needed</p>
+                <p className="text-slate-500 text-sm">Absent teachers have no classes today.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex justify-between items-end border-b pb-4 mb-4">
+                  <div>
+                    <h3 className="text-2xl font-bold text-slate-800">Substitution Plan</h3>
+                    <p className="text-slate-500 text-sm mt-1">For <span className="font-medium text-blue-600">{selectedDay}</span></p>
+                  </div>
+                </div>
+
+                {substitutionData.map((item, idx) => {
+                  const assignedTeacherId = assignments[item.id] || "";
+                  return (
+                    <div key={idx} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+                      <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                         <div className="flex items-center gap-3">
+                           <span className="bg-slate-800 text-white text-xs font-bold px-2 py-1 rounded">PERIOD {item.period}</span>
+                           <span className="font-bold text-slate-700 text-lg">{item.classInfo}</span>
+                         </div>
+                         <span className="text-xs font-medium text-red-500 bg-red-50 px-2 py-1 rounded-full border border-red-100">
+                           Absent: {item.absentTeacherName}
+                         </span>
+                      </div>
+                      <div className="p-4 bg-white">
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Assign Substitute</label>
+                        <select 
+                          className="w-full p-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none"
+                          value={assignedTeacherId}
+                          onChange={(e) => setAssignments(prev => ({ ...prev, [item.id]: e.target.value }))}
+                        >
+                          <option value="">-- Select Teacher --</option>
+                          {item.replacements.map(r => {
+                            const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
+                            return (
+                              <option key={r.id} value={r.id} disabled={isBooked} className={isBooked ? "text-slate-300 bg-slate-50" : ""}>
+                                {r.name} {isBooked ? "(Busy)" : ""}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        {item.replacements.length === 0 && (
+                          <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> No subject teachers available.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1052,7 +1059,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-100 border-b-2 border-slate-300">
-              <th className="p-3 font-bold text-slate-700 w-24 border-r border-slate-300">Period</th>
+              <th className="p-3 font-bold text-slate-700 w-24 border-r border-slate-300 text-center">Period</th>
               <th className="p-3 font-bold text-slate-700 w-40 border-r border-slate-300">Class</th>
               <th className="p-3 font-bold text-slate-700 w-64 border-r border-slate-300">Absent Teacher</th>
               <th className="p-3 font-bold text-slate-700">Substitute Teacher</th>
@@ -1290,7 +1297,7 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-800 font-sans flex flex-col h-screen overflow-hidden">
+    <div className="min-h-screen bg-slate-100 text-slate-800 font-sans flex flex-col h-screen overflow-hidden print:h-auto print:overflow-visible">
       {/* Header */}
       <header className="bg-slate-800 text-white shadow-md z-10 shrink-0 print:hidden">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -1372,7 +1379,7 @@ export default function App() {
       </header>
 
       {/* Content Area */}
-      <main className="flex-1 p-2 md:p-4 overflow-hidden min-h-0 relative">
+      <main className="flex-1 p-2 md:p-4 overflow-hidden min-h-0 relative print:hidden">
         
         {authError && (
           <div className="absolute top-4 left-4 right-4 z-50 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-sm flex items-start gap-3">
