@@ -766,10 +766,12 @@ const TimetableEditor = ({ teacher, onUpdateTimetable, onClose, definedClasses }
 const SubstitutionGenerator = ({ teachers, definedClasses }) => {
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [absentIds, setAbsentIds] = useState([]);
+  // State to track manual assignments: { [uniqueSubstitutionId]: teacherId }
   const [assignments, setAssignments] = useState({});
 
   const toggleAbsent = (id) => {
     setAbsentIds(prev => prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]);
+    // Reset assignments when absent list changes to avoid stale state
     setAssignments({});
   };
 
@@ -814,6 +816,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
     return false;
   };
 
+  // Calculate all necessary substitutions
   const substitutionData = useMemo(() => {
     if (absentIds.length === 0) return [];
 
@@ -845,7 +848,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
           });
 
           results.push({
-            id: `${absentId}-${periodIndex}`, 
+            id: `${absentId}-${periodIndex}`, // Unique ID for this substitution slot
             period: periodIndex + 1,
             classInfo: subject,
             targetCodes: targetCodes,
@@ -859,10 +862,20 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
     return results.sort((a, b) => a.period - b.period);
   }, [selectedDay, absentIds, teachers, validClassCodes]);
 
+  // Helper to check if a teacher is already booked in this period (for a DIFFERENT class)
   const isTeacherBookedInPeriod = (teacherId, period, currentSlotId) => {
+    // Look through all assignments
     for (const [slotId, assignedTeacherId] of Object.entries(assignments)) {
+      // Split slotId to get period index. ID format: "absentTeacherId-periodIndex"
+      // Wait, multiple teachers absent at same period? Yes.
+      // We need to check if the slot corresponds to the SAME period.
+      
+      // Let's find the substitution item for this slotId to get its period
       const assignedItem = substitutionData.find(item => item.id === slotId);
+      
       if (assignedItem && assignedItem.period === period) {
+         // This assignment is for the same period.
+         // If it's a different slot AND the teacher matches, they are booked.
          if (slotId !== currentSlotId && assignedTeacherId === teacherId) {
            return true;
          }
@@ -918,6 +931,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 h-full overflow-hidden min-h-0 print:hidden">
+        {/* Controls (Hidden on Print) */}
         <div className="col-span-1 lg:col-span-4 bg-slate-50 border-b lg:border-b-0 lg:border-r border-slate-200 p-4 overflow-y-auto h-full min-h-0">
           <div className="mb-6">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Day</label>
@@ -962,6 +976,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
           </div>
         </div>
 
+        {/* Results */}
         <div className="col-span-1 lg:col-span-8 p-6 overflow-y-auto h-full min-h-0 bg-white">
           {absentIds.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-400">
