@@ -355,7 +355,7 @@ const ClassDirectory = ({ classes, onAddClass, onDeleteClass, onUpdateClass }) =
   });
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full overflow-hidden print:hidden">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full overflow-hidden">
       {/* Class List */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
         <div className="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl shrink-0">
@@ -686,7 +686,7 @@ const TimetableEditor = ({ teacher, onUpdateTimetable, onClose, definedClasses }
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col relative overflow-hidden print:hidden">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col relative overflow-hidden">
       <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl shrink-0">
         <div>
           <h2 className="text-lg font-bold text-slate-800">Master Timetable</h2>
@@ -886,33 +886,34 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
             overflow: visible !important; 
             background: white !important;
             width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
           
-          /* Hide everything by default */
-          body * {
-            display: none;
+          /* CRITICAL: Completely remove the screen UI from flow */
+          .screen-only {
+            display: none !important;
           }
 
-          /* Only show the print section and its children */
-          #print-section, #print-section * {
-            display: block;
-          }
-
-          /* Ensure proper table layout */
-          #print-section table {
-            display: table;
+          /* Show only print section */
+          .print-only {
+            display: block !important;
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            border-collapse: collapse;
           }
-          #print-section thead { display: table-header-group; }
-          #print-section tbody { display: table-row-group; }
-          #print-section tr { display: table-row; page-break-inside: avoid; }
-          #print-section td, #print-section th { display: table-cell; }
+
+          /* Table handling */
+          table { width: 100%; border-collapse: collapse; }
+          thead { display: table-header-group; }
+          tr { page-break-inside: avoid; }
         }
       `}</style>
 
-      {/* --- SCREEN UI (HIDDEN ON PRINT) --- */}
-      <div className="flex-1 flex flex-col overflow-hidden print:hidden">
+      {/* --- SCREEN UI (Class handles hiding) --- */}
+      <div className="screen-only flex-1 flex flex-col h-screen overflow-hidden bg-slate-100 text-slate-800 font-sans">
+        
         <div className="p-5 bg-slate-800 text-white shrink-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h2 className="text-xl font-bold flex items-center gap-2">
@@ -1040,36 +1041,38 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
         </div>
       </div>
 
-      {/* --- PRINT VIEW (HIDDEN ON SCREEN, VISIBLE ON PRINT) --- */}
-      <div id="print-section" className="hidden">
-        <div className="text-center mb-8 border-b pb-4">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Substitution Schedule</h1>
-          <p className="text-lg text-slate-600">Date: <span className="font-bold">{selectedDay}</span></p>
+      {/* --- PRINT VIEW (VISIBILITY TOGGLED BY CSS) --- */}
+      <div className="print-only hidden bg-white text-black p-8">
+        <div className="text-center mb-8 border-b-2 border-slate-800 pb-4">
+          <h1 className="text-3xl font-bold mb-2 uppercase tracking-wide">Substitution Schedule</h1>
+          <p className="text-lg text-slate-600">Date: <span className="font-bold text-slate-900">{selectedDay}</span></p>
         </div>
         
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-slate-100 border-b-2 border-slate-300">
-              <th className="p-3 font-bold text-slate-700 w-24 border-r border-slate-300 text-center">Period</th>
-              <th className="p-3 font-bold text-slate-700 w-40 border-r border-slate-300">Class</th>
-              <th className="p-3 font-bold text-slate-700 w-64 border-r border-slate-300">Absent Teacher</th>
-              <th className="p-3 font-bold text-slate-700">Substitute Teacher</th>
+            <tr className="bg-slate-100 border-b-2 border-slate-800">
+              <th className="p-3 font-bold text-slate-900 w-24 border-r border-slate-300 text-center">Period</th>
+              <th className="p-3 font-bold text-slate-900 w-40 border-r border-slate-300">Class</th>
+              <th className="p-3 font-bold text-slate-900 w-64 border-r border-slate-300">Absent Teacher</th>
+              <th className="p-3 font-bold text-slate-900">Substitute Teacher</th>
             </tr>
           </thead>
           <tbody>
             {substitutionData.length === 0 ? (
               <tr>
-                <td colSpan="4" className="p-8 text-center text-slate-500 italic">No substitutions needed for this day.</td>
+                <td colSpan="4" className="p-8 text-center text-slate-500 italic border-b border-slate-200">
+                  No substitutions needed for this day.
+                </td>
               </tr>
             ) : (
               substitutionData.map((item, idx) => {
                 const assignedTeacherId = assignments[item.id];
                 const assignedName = teachers.find(t => t.id === assignedTeacherId)?.name;
                 return (
-                  <tr key={idx} className="border-b border-slate-200">
-                    <td className="p-3 font-bold text-slate-900 text-center border-r border-slate-200">{item.period}</td>
-                    <td className="p-3 font-bold text-slate-800 border-r border-slate-200">{item.classInfo}</td>
-                    <td className="p-3 text-red-600 font-medium border-r border-slate-200">{item.absentTeacherName}</td>
+                  <tr key={idx} className="border-b border-slate-300">
+                    <td className="p-3 font-bold text-slate-900 text-center border-r border-slate-300">{item.period}</td>
+                    <td className="p-3 font-bold text-slate-800 border-r border-slate-300">{item.classInfo}</td>
+                    <td className="p-3 text-red-600 font-bold border-r border-slate-300">{item.absentTeacherName}</td>
                     <td className="p-3 font-bold text-slate-900 bg-slate-50">
                       {assignedName || "____________________"}
                     </td>
@@ -1080,7 +1083,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
           </tbody>
         </table>
         
-        <div className="mt-8 text-center text-slate-400 text-sm">
+        <div className="mt-8 pt-4 border-t border-slate-200 text-center text-slate-400 text-xs">
           Generated by SchoolScheduler
         </div>
       </div>
@@ -1288,153 +1291,157 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-800 font-sans flex flex-col h-screen overflow-hidden print:h-auto print:overflow-visible">
-      {/* Header */}
-      <header className="bg-slate-800 text-white shadow-md z-10 shrink-0 print:hidden">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-             <div className="bg-blue-600 p-1.5 rounded text-white">
-               <Calendar className="w-5 h-5" />
-             </div>
-             <h1 className="font-bold text-xl tracking-tight hidden md:block">SchoolScheduler</h1>
-             <h1 className="font-bold text-xl tracking-tight md:hidden">SS</h1>
-          </div>
-          
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-2">
-            <div className="flex bg-slate-700 rounded-lg p-1 gap-1 items-center mr-2">
+    <div className="h-screen w-full flex flex-col overflow-hidden bg-slate-100 text-slate-800 font-sans">
+      
+      {/* --- SCREEN LAYOUT --- */}
+      <div className="screen-only flex flex-col h-full overflow-hidden">
+        <header className="bg-slate-800 text-white shadow-md z-10 shrink-0">
+          <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="bg-blue-600 p-1.5 rounded text-white">
+                <Calendar className="w-5 h-5" />
+              </div>
+              <h1 className="font-bold text-xl tracking-tight hidden md:block">SchoolScheduler</h1>
+              <h1 className="font-bold text-xl tracking-tight md:hidden">SS</h1>
+            </div>
+            
+            <div className="hidden md:flex items-center gap-2">
+              <div className="flex bg-slate-700 rounded-lg p-1 gap-1 items-center mr-2">
+                <button 
+                  onClick={() => { setActiveTab('classes'); setSelectedTeacher(null); }}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'classes' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
+                >
+                  Directory
+                </button>
+                <button 
+                  onClick={() => { setActiveTab('manage'); setSelectedTeacher(null); }}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'manage' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
+                >
+                  Timetables
+                </button>
+                <button 
+                  onClick={() => setActiveTab('substitute')}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'substitute' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
+                >
+                  Generate Subs
+                </button>
+              </div>
               <button 
-                onClick={() => { setActiveTab('classes'); setSelectedTeacher(null); }}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'classes' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
+                onClick={handleForceReloadDefaults}
+                disabled={importing}
+                className="p-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-md transition-colors"
+                title="Reload Default Teachers"
               >
-                Directory
-              </button>
-              <button 
-                onClick={() => { setActiveTab('manage'); setSelectedTeacher(null); }}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'manage' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
-              >
-                Timetables
-              </button>
-              <button 
-                onClick={() => setActiveTab('substitute')}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'substitute' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
-              >
-                Generate Subs
+                {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               </button>
             </div>
-            <button 
-              onClick={handleForceReloadDefaults}
-              disabled={importing}
-              className="p-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-md transition-colors"
-              title="Reload Default Teachers"
-            >
-              {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-slate-300">
+              <Menu className="w-6 h-6" />
             </button>
           </div>
 
-          {/* Mobile Menu Button */}
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-slate-300">
-            <Menu className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Mobile Nav Dropdown */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-slate-700 p-4 space-y-2 border-t border-slate-600">
-             <button 
-                onClick={() => { setActiveTab('classes'); setSelectedTeacher(null); setMobileMenuOpen(false); }}
-                className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === 'classes' ? 'bg-white text-slate-800' : 'text-slate-300'}`}
-              >
-                Class Directory
-              </button>
+          {mobileMenuOpen && (
+            <div className="md:hidden bg-slate-700 p-4 space-y-2 border-t border-slate-600">
               <button 
-                onClick={() => { setActiveTab('manage'); setSelectedTeacher(null); setMobileMenuOpen(false); }}
-                className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === 'manage' ? 'bg-white text-slate-800' : 'text-slate-300'}`}
+                  onClick={() => { setActiveTab('classes'); setSelectedTeacher(null); setMobileMenuOpen(false); }}
+                  className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === 'classes' ? 'bg-white text-slate-800' : 'text-slate-300'}`}
+                >
+                  Class Directory
+                </button>
+                <button 
+                  onClick={() => { setActiveTab('manage'); setSelectedTeacher(null); setMobileMenuOpen(false); }}
+                  className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === 'manage' ? 'bg-white text-slate-800' : 'text-slate-300'}`}
+                >
+                  Timetables
+                </button>
+                <button 
+                  onClick={() => { setActiveTab('substitute'); setMobileMenuOpen(false); }}
+                  className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === 'substitute' ? 'bg-white text-slate-800' : 'text-slate-300'}`}
+                >
+                  Generate Subs
+                </button>
+                <button 
+                onClick={handleForceReloadDefaults}
+                className="block w-full text-left px-4 py-2 rounded-md text-sm font-medium text-slate-300 flex items-center gap-2"
               >
-                Timetables
+                <RefreshCw className="w-4 h-4" /> Reload Defaults
               </button>
-              <button 
-                onClick={() => { setActiveTab('substitute'); setMobileMenuOpen(false); }}
-                className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === 'substitute' ? 'bg-white text-slate-800' : 'text-slate-300'}`}
-              >
-                Generate Subs
-              </button>
-              <button 
-              onClick={handleForceReloadDefaults}
-              className="block w-full text-left px-4 py-2 rounded-md text-sm font-medium text-slate-300 flex items-center gap-2"
-            >
-              <RefreshCw className="w-4 h-4" /> Reload Defaults
-            </button>
-          </div>
-        )}
-      </header>
-
-      {/* Content Area */}
-      <main className="flex-1 p-2 md:p-4 overflow-hidden min-h-0 relative print:hidden">
-        
-        {authError && (
-          <div className="absolute top-4 left-4 right-4 z-50 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-sm flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-bold text-sm">Authentication Error</h3>
-              <p className="text-sm mt-1 opacity-90">{authError}</p>
             </div>
-            <button onClick={() => setAuthError(null)} className="ml-auto text-red-400 hover:text-red-600">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        )}
+          )}
+        </header>
 
-        <div className="max-w-7xl mx-auto h-full flex flex-col">
-          
-          {activeTab === 'classes' && (
-            <div className="h-full w-full">
-              <ClassDirectory 
-                classes={classes} 
-                onAddClass={addClass}
-                onUpdateClass={updateClass}
-                onDeleteClass={deleteClass}
-              />
+        <main className="flex-1 p-2 md:p-4 overflow-hidden min-h-0 relative">
+          {authError && (
+            <div className="absolute top-4 left-4 right-4 z-50 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-sm flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-bold text-sm">Authentication Error</h3>
+                <p className="text-sm mt-1 opacity-90">{authError}</p>
+              </div>
+              <button onClick={() => setAuthError(null)} className="ml-auto text-red-400 hover:text-red-600">
+                <X className="w-5 h-5" />
+              </button>
             </div>
           )}
 
-          {activeTab === 'manage' && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-0">
-              <div className="col-span-1 lg:col-span-3 h-[40vh] lg:h-full min-h-0">
-                <TeacherManager 
-                  teachers={teachers}
-                  onSelectTeacher={setSelectedTeacher}
-                  onDeleteTeacher={deleteTeacher}
-                  onAddTeacher={addTeacher}
+          <div className="max-w-7xl mx-auto h-full flex flex-col">
+            {activeTab === 'classes' && (
+              <div className="h-full w-full">
+                <ClassDirectory 
+                  classes={classes} 
+                  onAddClass={addClass}
+                  onUpdateClass={updateClass}
+                  onDeleteClass={deleteClass}
                 />
               </div>
-              <div className="col-span-1 lg:col-span-9 h-full min-h-0">
-                {selectedTeacher ? (
-                  <TimetableEditor 
-                    teacher={selectedTeacher}
-                    definedClasses={classes}
-                    onUpdateTimetable={updateTimetable}
-                    onClose={() => setSelectedTeacher(null)}
+            )}
+
+            {activeTab === 'manage' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-0">
+                <div className="col-span-1 lg:col-span-3 h-[40vh] lg:h-full min-h-0">
+                  <TeacherManager 
+                    teachers={teachers}
+                    onSelectTeacher={setSelectedTeacher}
+                    onDeleteTeacher={deleteTeacher}
+                    onAddTeacher={addTeacher}
                   />
-                ) : (
-                  <div className="hidden lg:flex h-full bg-white rounded-xl border border-slate-200 border-dashed flex-col items-center justify-center text-slate-400 p-8 text-center">
-                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                      <ArrowRight className="w-8 h-8 text-slate-300" />
+                </div>
+                <div className="col-span-1 lg:col-span-9 h-full min-h-0">
+                  {selectedTeacher ? (
+                    <TimetableEditor 
+                      teacher={selectedTeacher}
+                      definedClasses={classes}
+                      onUpdateTimetable={updateTimetable}
+                      onClose={() => setSelectedTeacher(null)}
+                    />
+                  ) : (
+                    <div className="hidden lg:flex h-full bg-white rounded-xl border border-slate-200 border-dashed flex-col items-center justify-center text-slate-400 p-8 text-center">
+                      <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                        <ArrowRight className="w-8 h-8 text-slate-300" />
+                      </div>
+                      <h3 className="text-lg font-medium text-slate-600 mb-1">Select a teacher</h3>
+                      <p className="max-w-sm text-sm opacity-75">Click a name from the list to edit their timetable.</p>
                     </div>
-                    <h3 className="text-lg font-medium text-slate-600 mb-1">Select a teacher</h3>
-                    <p className="max-w-sm text-sm opacity-75">Click a name from the list to edit their timetable.</p>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {activeTab === 'substitute' && (
-            <SubstitutionGenerator teachers={teachers} definedClasses={classes} />
-          )}
-
-        </div>
-      </main>
+            {activeTab === 'substitute' && (
+              <SubstitutionGenerator teachers={teachers} definedClasses={classes} />
+            )}
+          </div>
+        </main>
+      </div>
+      
+      {/* --- PRINT LAYOUT (ONLY VISIBLE WHEN PRINTING) --- */}
+      {/* This section uses 'display: none' by default via the 'print-only' class logic 
+          defined in the style tag above in previous iterations. We replicate it here. */}
+      {activeTab === 'substitute' && (
+         <SubstitutionGenerator PrintMode={true} teachers={teachers} definedClasses={classes} />
+      )}
+      
     </div>
   );
 }
