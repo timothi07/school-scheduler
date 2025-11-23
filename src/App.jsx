@@ -163,9 +163,9 @@ const INITIAL_TEACHERS = [
     name: "SK",
     timetable: {
       "Monday": ["10B", "", "8B", "9A", "", "10A", ""],
-      "Tuesday": ["10B", "10A", "", "8C", "8B", "", "9A"],
+      "Tuesday": ["10B", "10A", "","8C", "8B", "", "9A"],
       "Wednesday": ["10B", "", "9A", "8C", "8B", "", "10A"],
-      "Thursday": ["10B", "", "8B", "", "8C", "9A", ""],
+      "Thursday": ["10B", "", "8B", "", "8C", "9A", "",],
       "Friday": ["10B", "", "9A", "10A", "8C", "", "10A"]
     }
   },
@@ -174,8 +174,8 @@ const INITIAL_TEACHERS = [
     timetable: {
       "Monday": ["", "9C", "9B", "", "8A", "10C", "10C"],
       "Tuesday": ["", "", "9B", "8A", "", "10C", "9C"],
-      "Wednesday": ["", "9B", "", "9B", "10C", "9C", ""],
-      "Thursday": ["9B", "8A", "", "9B", "9B", "", "9C"],
+      "Wednesday": ["", "9B", "", "9B", "10C", "9C",""],
+      "Thursday": ["9B", "8A", "", "9B", "9B", "","9C"],
       "Friday": ["9C", "", "8A", "9B", "", "", "10C"]
     }
   },
@@ -192,11 +192,11 @@ const INITIAL_TEACHERS = [
   {
     name: "RM",
     timetable: {
-      "Monday": ["9B", "", "8A", "8A", "8C", "", "9C"],
+      "Monday": ["9B", "", "10B", "8A", "8C", "", "9C"],
       "Tuesday": ["9B", "", "10C", "8B", "8A", "", ""],
       "Wednesday": ["10A", "8B", "8A", "", "9A", "", ""],
-      "Thursday": ["8B", "10C", "", "9C", "10A", "", "10B"],
-      "Friday": ["8B", "9A", "", "8C", "", "10B", ""]
+      "Thursday": ["", "10C", "", "9C", "10A", "", ""],
+      "Friday": ["9A", "", "", "8C", "10B", "8A", ""]
     }
   },
   {
@@ -226,7 +226,7 @@ const INITIAL_TEACHERS = [
       "Tuesday": ["9A", "", "8B", "10C", "10C", "", "9B"],
       "Wednesday": ["9B", "10B", "10B", "", "9B", "9A", "10C"],
       "Thursday": ["", "", "10C", "", "9A", "8B", ""],
-      "Friday": ["9A", "", "", "10B", "", "8B", "9B"]
+      "Friday": ["", "9A", "", "10B", "", "8B", "9B"]
     }
   },
   {
