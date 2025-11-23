@@ -68,7 +68,7 @@ const appId = "school-scheduler-v1";
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const PERIODS = [1, 2, 3, 4, 5, 6, 7]; 
 
-// --- DEFAULT DATA (24 Teachers, Classes Only) ---
+// --- DEFAULT DATA ---
 const INITIAL_CLASSES = [
   { name: '5', divisions: ['A', 'B'] },
   { name: '6', divisions: ['A', 'B'] },
@@ -355,7 +355,7 @@ const ClassDirectory = ({ classes, onAddClass, onDeleteClass, onUpdateClass }) =
   });
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full overflow-hidden">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full overflow-hidden print:hidden">
       {/* Class List */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
         <div className="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl shrink-0">
@@ -686,7 +686,7 @@ const TimetableEditor = ({ teacher, onUpdateTimetable, onClose, definedClasses }
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col relative overflow-hidden">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col relative overflow-hidden print:hidden">
       <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl shrink-0">
         <div>
           <h2 className="text-lg font-bold text-slate-800">Master Timetable</h2>
@@ -766,12 +766,10 @@ const TimetableEditor = ({ teacher, onUpdateTimetable, onClose, definedClasses }
 const SubstitutionGenerator = ({ teachers, definedClasses }) => {
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [absentIds, setAbsentIds] = useState([]);
-  // State to track manual assignments: { [uniqueSubstitutionId]: teacherId }
   const [assignments, setAssignments] = useState({});
 
   const toggleAbsent = (id) => {
     setAbsentIds(prev => prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]);
-    // Reset assignments when absent list changes to avoid stale state
     setAssignments({});
   };
 
@@ -816,7 +814,6 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
     return false;
   };
 
-  // Calculate all necessary substitutions
   const substitutionData = useMemo(() => {
     if (absentIds.length === 0) return [];
 
@@ -848,7 +845,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
           });
 
           results.push({
-            id: `${absentId}-${periodIndex}`, // Unique ID for this substitution slot
+            id: `${absentId}-${periodIndex}`, 
             period: periodIndex + 1,
             classInfo: subject,
             targetCodes: targetCodes,
@@ -862,16 +859,10 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
     return results.sort((a, b) => a.period - b.period);
   }, [selectedDay, absentIds, teachers, validClassCodes]);
 
-  // Helper to check if a teacher is already booked in this period (for a DIFFERENT class)
   const isTeacherBookedInPeriod = (teacherId, period, currentSlotId) => {
-    // Look through all assignments
     for (const [slotId, assignedTeacherId] of Object.entries(assignments)) {
-      // Let's find the substitution item for this slotId to get its period
       const assignedItem = substitutionData.find(item => item.id === slotId);
-      
       if (assignedItem && assignedItem.period === period) {
-         // This assignment is for the same period.
-         // If it's a different slot AND the teacher matches, they are booked.
          if (slotId !== currentSlotId && assignedTeacherId === teacherId) {
            return true;
          }
