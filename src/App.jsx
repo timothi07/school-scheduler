@@ -914,44 +914,76 @@ const SubstitutionGenerator = ({
           <thead>
             <tr>
               <th className="border border-black p-2 w-24 bg-white text-center">Period</th>
-              <th className="border border-black p-2 w-40 bg-white text-center">Class</th>
-              <th className="border border-black p-2 w-64 bg-white text-center">Absent Teacher</th>
-              <th className="border border-black p-2 bg-white font-bold text-center">Substitute Teacher</th>
+              <th className="border border-black p-2 w-24 bg-white text-center"></th>
+              {PERIODS.map(p => (
+                <th key={p} className="border border-black p-2 bg-white font-bold text-center">
+                  {p}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {substitutionData.map((item, idx) => {
-              const assignedTeacherId = assignments[item.id];
-              const teacherObj = item.replacements.find(t => t.id === assignedTeacherId);
-              const subName = teacherObj ? teacherObj.name : (teachers.find(t => t.id === assignedTeacherId)?.name || "");
-              const subType = teacherObj ? teacherObj.type : "";
-
-              let colorClass = "text-black";
-              if (subType === 'strict') colorClass = "text-green-700";
-              else if (subType === 'general') colorClass = "text-amber-600";
-
+            {absentIds.sort((a, b) => {
+              const nameA = teachers.find(t => t.id === a)?.name || "";
+              const nameB = teachers.find(t => t.id === b)?.name || "";
+              return nameA.localeCompare(nameB);
+            }).map(absentId => {
+              const teacher = teachers.find(t => t.id === absentId);
+              if (!teacher) return null;
+              
               return (
-                <tr key={idx}>
-                  <td className="border border-black p-2 font-bold bg-white text-center align-middle text-lg">{item.period}</td>
-                  <td className="border border-black p-2 font-bold bg-white text-center align-middle text-lg">{item.classInfo}</td>
-                  <td className="border border-black p-2 font-bold bg-white text-center align-middle text-red-600 text-lg">{item.absentTeacherName}</td>
-                  <td className="border border-black p-2 text-center align-middle h-16">
-                    {subName ? (
-                      <span className={`font-bold text-xl ${colorClass}`}>{subName}</span>
-                    ) : (
-                      <span className="text-gray-400">____________________</span>
-                    )}
+                <tr key={absentId}>
+                  <td colSpan={2} className="border border-black p-2 font-bold bg-white text-center align-middle text-red-600 text-lg">
+                    {teacher.name}
                   </td>
+                  {PERIODS.map((p, index) => {
+                    const slotId = `${absentId}-${index}`; 
+                    const item = substitutionData.find(d => d.id === slotId);
+                    
+                    let content = "---";
+                    let subName = "";
+                    let subType = "";
+                    
+                    if (item) {
+                       content = item.classInfo;
+                       const assignedId = assignments[slotId];
+                       const replacementInfo = item.replacements.find(r => r.id === assignedId);
+                       if (replacementInfo) {
+                         subName = replacementInfo.name;
+                         subType = replacementInfo.type;
+                       } else if (assignedId) {
+                         const t = teachers.find(tr => tr.id === assignedId);
+                         subName = t?.name || "";
+                       }
+                    }
+                    
+                    // Color Scheme
+                    let colorClass = "text-black";
+                    if (subType === 'strict') colorClass = "text-green-700";
+                    else if (subType === 'general') colorClass = "text-amber-600";
+
+                    return (
+                      <td key={p} className="border border-black p-1 h-16 text-center align-middle">
+                        {item ? (
+                          <div className="flex flex-col justify-between h-full py-1">
+                            <span className="text-sm font-medium">{content}</span>
+                            {subName ? (
+                              <span className={`font-bold text-base ${colorClass}`}>
+                                {subName}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-red-300 italic">Required</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">---</span>
+                        )}
+                      </td>
+                    );
+                  })}
                 </tr>
               );
             })}
-            {substitutionData.length === 0 && (
-               <tr>
-                 <td colSpan="4" className="p-8 text-center text-slate-500 italic border border-black">
-                   No substitutions needed for this day.
-                 </td>
-               </tr>
-            )}
           </tbody>
         </table>
       </div>
@@ -973,7 +1005,13 @@ const SubstitutionGenerator = ({
             margin: 0 !important;
             padding: 0 !important;
           }
-          .screen-only { display: none !important; }
+          
+          /* CRITICAL: Completely remove the screen UI from flow */
+          .screen-only {
+            display: none !important;
+          }
+
+          /* Show only print section */
           .print-only {
             display: block !important;
             position: absolute;
@@ -981,6 +1019,8 @@ const SubstitutionGenerator = ({
             left: 0;
             width: 100%;
           }
+
+          /* Grid Table Styles */
           table { width: 100%; border-collapse: collapse; border: 2px solid black; }
           th, td { border: 1px solid black; padding: 8px; text-align: center; vertical-align: top; height: 60px; }
           th { background-color: #f3f4f6; font-weight: bold; }
@@ -1137,8 +1177,8 @@ export default function App() {
   const [authError, setAuthError] = useState(null);
   const [activeTab, setActiveTab] = useState('manage'); 
   const [selectedTeacher, setSelectedTeacher] = useState(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Mobile Menu State
+
   // Hoisted state for substitution logic
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [absentIds, setAbsentIds] = useState([]);
