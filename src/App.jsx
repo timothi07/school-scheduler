@@ -773,19 +773,17 @@ const TimetableEditor = ({ teacher, onUpdateTimetable, onClose, definedClasses }
 };
 
 // 4. Substitution Generator Component
-const SubstitutionGenerator = ({ teachers, definedClasses, PrintMode }) => {
-  const [selectedDay, setSelectedDay] = useState('Monday');
-  const [absentIds, setAbsentIds] = useState([]);
-  const [assignments, setAssignments] = useState({});
-
-  const toggleAbsent = (id) => {
-    setAbsentIds(prev => prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]);
-    setAssignments({});
-  };
-
-  const sortedTeachers = useMemo(() => {
-    return [...teachers].sort((a, b) => a.name.localeCompare(b.name));
-  }, [teachers]);
+const SubstitutionGenerator = ({ 
+  teachers, 
+  definedClasses, 
+  PrintMode,
+  selectedDay,
+  setSelectedDay,
+  absentIds,
+  toggleAbsent,
+  assignments,
+  setAssignments 
+}) => {
 
   const validClassCodes = useMemo(() => {
     const codes = new Set();
@@ -873,7 +871,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses, PrintMode }) => {
       });
     });
 
-    // Sort by PERIOD (1-7) first, then by ABSENT TEACHER NAME
+    // Sort by Period (1-7) first, then by Absent Teacher Name
     return results.sort((a, b) => {
       if (a.period === b.period) {
          return a.absentTeacherName.localeCompare(b.absentTeacherName);
@@ -894,6 +892,8 @@ const SubstitutionGenerator = ({ teachers, definedClasses, PrintMode }) => {
     return false;
   };
 
+  const sortedTeachers = [...teachers].sort((a, b) => a.name.localeCompare(b.name));
+
   const handlePrint = () => {
     const originalTitle = document.title;
     const dateStr = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
@@ -902,7 +902,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses, PrintMode }) => {
     document.title = originalTitle;
   };
 
-  // If we are in print mode (invoked invisibly), just return the print layout
+  // Print Layout
   if (PrintMode) {
     return (
       <div className="print-only hidden bg-white text-black p-4">
@@ -922,12 +922,10 @@ const SubstitutionGenerator = ({ teachers, definedClasses, PrintMode }) => {
           <tbody>
             {substitutionData.map((item, idx) => {
               const assignedTeacherId = assignments[item.id];
-              // Find teacher details to check type for coloring
               const teacherObj = item.replacements.find(t => t.id === assignedTeacherId);
               const subName = teacherObj ? teacherObj.name : (teachers.find(t => t.id === assignedTeacherId)?.name || "");
               const subType = teacherObj ? teacherObj.type : "";
 
-              // Color Scheme
               let colorClass = "text-black";
               if (subType === 'strict') colorClass = "text-green-700";
               else if (subType === 'general') colorClass = "text-amber-600";
@@ -960,7 +958,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses, PrintMode }) => {
     );
   }
 
-  // Normal Screen Mode
+  // Screen Layout
   return (
     <div className="flex flex-col h-full w-full">
       {/* Style Injection for Print */}
@@ -975,13 +973,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses, PrintMode }) => {
             margin: 0 !important;
             padding: 0 !important;
           }
-          
-          /* CRITICAL: Completely remove the screen UI from flow */
-          .screen-only {
-            display: none !important;
-          }
-
-          /* Show only print section */
+          .screen-only { display: none !important; }
           .print-only {
             display: block !important;
             position: absolute;
@@ -989,8 +981,6 @@ const SubstitutionGenerator = ({ teachers, definedClasses, PrintMode }) => {
             left: 0;
             width: 100%;
           }
-
-          /* Grid Table Styles */
           table { width: 100%; border-collapse: collapse; border: 2px solid black; }
           th, td { border: 1px solid black; padding: 8px; text-align: center; vertical-align: top; height: 60px; }
           th { background-color: #f3f4f6; font-weight: bold; }
@@ -999,9 +989,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses, PrintMode }) => {
         }
       `}</style>
 
-      {/* --- SCREEN UI (Class handles hiding) --- */}
       <div className="screen-only flex-1 flex flex-col h-full overflow-hidden bg-slate-100 text-slate-800 font-sans">
-        
         <div className="p-5 bg-slate-800 text-white shrink-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h2 className="text-xl font-bold flex items-center gap-2">
@@ -1149,7 +1137,21 @@ export default function App() {
   const [authError, setAuthError] = useState(null);
   const [activeTab, setActiveTab] = useState('manage'); 
   const [selectedTeacher, setSelectedTeacher] = useState(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Mobile Menu State
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // Hoisted state for substitution logic
+  const [selectedDay, setSelectedDay] = useState('Monday');
+  const [absentIds, setAbsentIds] = useState([]);
+  const [assignments, setAssignments] = useState({});
+
+  // Helper to pass down
+  const toggleAbsent = (id) => {
+    setAbsentIds(prev => prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]);
+    // Clear assignments for this teacher to avoid stale state
+    // Ideally, filter out assignments keys that start with `id-`
+    // For simplicity, keeping current assignment logic is fine, or reset:
+    // setAssignments({}); 
+  };
 
   // Auth & Initial Data Load
   useEffect(() => {
@@ -1476,8 +1478,20 @@ export default function App() {
               </div>
             )}
 
+            {/* Render SubstitutionGenerator passing props. 
+                We pass PrintMode=false (implied) to render the Screen UI.
+            */}
             {activeTab === 'substitute' && (
-              <SubstitutionGenerator teachers={teachers} definedClasses={classes} />
+              <SubstitutionGenerator 
+                teachers={teachers} 
+                definedClasses={classes}
+                selectedDay={selectedDay}
+                setSelectedDay={setSelectedDay}
+                absentIds={absentIds}
+                toggleAbsent={toggleAbsent}
+                assignments={assignments}
+                setAssignments={setAssignments}
+              />
             )}
           </div>
         </main>
@@ -1485,9 +1499,19 @@ export default function App() {
       
       {/* --- PRINT LAYOUT (ONLY VISIBLE WHEN PRINTING) --- */}
       {/* This section uses 'display: none' by default via the 'print-only' class logic 
-          defined in the style tag above in previous iterations. We replicate it here. */}
+          defined in the style tag. We ensure it gets the SAME state as the screen. */}
       {activeTab === 'substitute' && (
-         <SubstitutionGenerator PrintMode={true} teachers={teachers} definedClasses={classes} />
+         <SubstitutionGenerator 
+           PrintMode={true} 
+           teachers={teachers} 
+           definedClasses={classes}
+           selectedDay={selectedDay}
+           // setters not needed for print
+           absentIds={absentIds}
+           toggleAbsent={() => {}}
+           assignments={assignments}
+           setAssignments={() => {}}
+         />
       )}
       
     </div>
