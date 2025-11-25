@@ -830,10 +830,6 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
           
           const targetCodes = extractClassCodes(subject);
 
-          // Logic: 
-          // 1. Strict Match: Teachers free AND teaching this class
-          // 2. General Match: Teachers free (but not teaching this class)
-          
           const strictMatches = [];
           const generalMatches = [];
 
@@ -860,7 +856,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
           ];
 
           results.push({
-            id: `${absentId}-${periodIndex}`, // Unique ID for this substitution slot
+            id: `${absentId}-${periodIndex}`, 
             period: periodIndex + 1,
             classInfo: subject,
             targetCodes: targetCodes,
@@ -872,7 +868,6 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
       });
     });
 
-    // Sort by absent teacher name, then by period (matches screenshot logic)
     return results.sort((a, b) => {
       if (a.absentTeacherName === b.absentTeacherName) {
          return a.period - b.period;
@@ -881,7 +876,6 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
     });
   }, [selectedDay, absentIds, teachers, validClassCodes]);
 
-  // Helper to check if a teacher is already booked in this period (for a DIFFERENT class)
   const isTeacherBookedInPeriod = (teacherId, period, currentSlotId) => {
     for (const [slotId, assignedTeacherId] of Object.entries(assignments)) {
       const assignedItem = substitutionData.find(item => item.id === slotId);
@@ -937,7 +931,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
       `}</style>
 
       {/* --- SCREEN UI (Class handles hiding) --- */}
-      <div className="screen-only flex-1 flex flex-col h-screen overflow-hidden bg-slate-100 text-slate-800 font-sans">
+      <div className="screen-only flex-1 flex flex-col h-full overflow-hidden bg-slate-100 text-slate-800 font-sans">
         
         <div className="p-5 bg-slate-800 text-white shrink-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
@@ -1076,7 +1070,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
       {/* --- PRINT VIEW (VISIBILITY TOGGLED BY CSS) --- */}
       <div className="print-only hidden bg-white text-black p-4">
         <div className="text-center mb-6">
-          <h1 className="text-xl font-bold mb-1 uppercase">{new Date().toLocaleDateString('en-GB')}</h1>
+          <h1 className="text-xl font-bold mb-1 uppercase">{selectedDay} - {new Date().toLocaleDateString('en-GB')}</h1>
         </div>
         
         <table className="w-full border-collapse border border-black text-sm">
