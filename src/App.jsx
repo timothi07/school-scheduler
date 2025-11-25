@@ -163,9 +163,9 @@ const INITIAL_TEACHERS = [
     name: "SK",
     timetable: {
       "Monday": ["10B", "", "8B", "9A", "", "10A", ""],
-      "Tuesday": ["10B", "10A", "","8C", "8B", "", "9A"],
+      "Tuesday": ["10B", "10A", "", "8C", "8B", "", "9A"],
       "Wednesday": ["10B", "", "9A", "8C", "8B", "", "10A"],
-      "Thursday": ["10B", "", "8B", "", "8C", "9A", "",],
+      "Thursday": ["10B", "", "8B", "", "8C", "9A", ""],
       "Friday": ["10B", "", "9A", "10A", "8C", "", "10A"]
     }
   },
@@ -781,9 +781,12 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
 
   const toggleAbsent = (id) => {
     setAbsentIds(prev => prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]);
-    // Reset assignments when absent list changes to avoid stale state
     setAssignments({});
   };
+
+  const sortedTeachers = useMemo(() => {
+    return [...teachers].sort((a, b) => a.name.localeCompare(b.name));
+  }, [teachers]);
 
   const validClassCodes = useMemo(() => {
     const codes = new Set();
@@ -826,7 +829,6 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
     return false;
   };
 
-  // Calculate all necessary substitutions
   const substitutionData = useMemo(() => {
     if (absentIds.length === 0) return [];
 
@@ -840,25 +842,28 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
         if (periodIndex < 7 && subject && subject.trim() !== '') {
           
           const targetCodes = extractClassCodes(subject);
+          const strictMatches = [];
+          const generalMatches = [];
 
-          const replacements = teachers.filter(t => {
-            if (t.id === absentId) return false;
-            if (absentIds.includes(t.id)) return false;
-            
-            const tSchedule = t.timetable?.[selectedDay];
-            const tActivity = tSchedule?.[periodIndex];
-            const isFree = !tActivity || tActivity.trim() === '';
-            if (!isFree) return false;
-
-            if (targetCodes.length > 0) {
-               return teacherTeachesAny(t, targetCodes);
-            } else {
-               return false;
-            }
+          teachers.forEach(t => {
+             if (t.id === absentId || absentIds.includes(t.id)) return;
+             const tSchedule = t.timetable?.[selectedDay];
+             const tActivity = tSchedule?.[periodIndex];
+             const isFree = !tActivity || tActivity.trim() === '';
+             
+             if (isFree) {
+                if (targetCodes.length > 0 && teacherTeachesAny(t, targetCodes)) {
+                   strictMatches.push({ ...t, type: 'strict' });
+                } else {
+                   generalMatches.push({ ...t, type: 'general' });
+                }
+             }
           });
 
+          const replacements = [...strictMatches, ...generalMatches];
+
           results.push({
-            id: `${absentId}-${periodIndex}`, // Unique ID for this substitution slot
+            id: `${absentId}-${periodIndex}`, 
             period: periodIndex + 1,
             classInfo: subject,
             targetCodes: targetCodes,
@@ -870,19 +875,18 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
       });
     });
 
-    return results.sort((a, b) => a.period - b.period);
+    return results.sort((a, b) => {
+      if (a.absentTeacherName === b.absentTeacherName) {
+         return a.period - b.period;
+      }
+      return a.absentTeacherName.localeCompare(b.absentTeacherName);
+    });
   }, [selectedDay, absentIds, teachers, validClassCodes]);
 
-  // Helper to check if a teacher is already booked in this period (for a DIFFERENT class)
   const isTeacherBookedInPeriod = (teacherId, period, currentSlotId) => {
-    // Look through all assignments
     for (const [slotId, assignedTeacherId] of Object.entries(assignments)) {
-      // Let's find the substitution item for this slotId to get its period
       const assignedItem = substitutionData.find(item => item.id === slotId);
-      
       if (assignedItem && assignedItem.period === period) {
-         // This assignment is for the same period.
-         // If it's a different slot AND the teacher matches, they are booked.
          if (slotId !== currentSlotId && assignedTeacherId === teacherId) {
            return true;
          }
@@ -972,7 +976,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Mark Absent Staff</label>
               <div className="space-y-2">
-                {teachers.map(t => (
+                {sortedTeachers.map(t => (
                   <label key={t.id} className={`
                     flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all
                     ${absentIds.includes(t.id) 
@@ -1092,7 +1096,11 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
             </tr>
           </thead>
           <tbody>
-            {absentIds.map(absentId => {
+            {absentIds.sort((a, b) => {
+              const nameA = teachers.find(t => t.id === a)?.name || "";
+              const nameB = teachers.find(t => t.id === b)?.name || "";
+              return nameA.localeCompare(nameB);
+            }).map(absentId => {
               const teacher = teachers.find(t => t.id === absentId);
               if (!teacher) return null;
               
@@ -1112,19 +1120,17 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
                     if (item) {
                        content = item.classInfo;
                        const assignedId = assignments[slotId];
-                       // Find the assigned teacher in the replacements array to know their type
                        const replacementInfo = item.replacements.find(r => r.id === assignedId);
                        if (replacementInfo) {
                          subName = replacementInfo.name;
                          subType = replacementInfo.type;
                        } else if (assignedId) {
-                         // Fallback if just finding by ID in general list
                          const t = teachers.find(tr => tr.id === assignedId);
                          subName = t?.name || "";
                        }
                     }
                     
-                    // Determine Color Class for Print
+                    // Color Scheme
                     let colorClass = "text-black";
                     if (subType === 'strict') colorClass = "text-green-700";
                     else if (subType === 'general') colorClass = "text-amber-600";
@@ -1503,8 +1509,8 @@ export default function App() {
       </div>
       
       {/* --- PRINT LAYOUT (ONLY VISIBLE WHEN PRINTING) --- */}
-      {/* Note: This is rendered alongside the screen UI but hidden by default. 
-          The <style> tag inside SubstitutionGenerator handles the toggling via display:none/block */}
+      {/* This section uses 'display: none' by default via the 'print-only' class logic 
+          defined in the style tag above in previous iterations. We replicate it here. */}
       {activeTab === 'substitute' && (
          <SubstitutionGenerator PrintMode={true} teachers={teachers} definedClasses={classes} />
       )}
