@@ -68,7 +68,7 @@ const appId = "school-scheduler-v1";
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const PERIODS = [1, 2, 3, 4, 5, 6, 7]; 
 
-// --- DEFAULT DATA (24 Teachers, Classes Only) ---
+// --- DEFAULT DATA ---
 const INITIAL_CLASSES = [
   { name: '5', divisions: ['A', 'B'] },
   { name: '6', divisions: ['A', 'B'] },
@@ -317,6 +317,16 @@ const INITIAL_TEACHERS = [
       "Wednesday": ["5B", "", "7A", "", "", "5A", "7B"],
       "Thursday": ["5B", "5A", "6B", "", "7A", "", "7B"],
       "Friday": ["5B", "", "6B", "", "5A", "7B", "5B"]
+    }
+  },
+  {
+    name: "PRIYANKA",
+    timetable: {
+      "Monday": ["", "", "", "", "", "", ""],
+      "Tuesday": ["", "", "", "", "", "", ""],
+      "Wednesday": ["", "", "", "", "", "", ""],
+      "Thursday": ["", "", "", "", "", "", ""],
+      "Friday": ["", "", "", "", "", "", ""]
     }
   }
 ];
@@ -766,7 +776,6 @@ const TimetableEditor = ({ teacher, onUpdateTimetable, onClose, definedClasses }
 const SubstitutionGenerator = ({ teachers, definedClasses }) => {
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [absentIds, setAbsentIds] = useState([]);
-  // State to track manual assignments: { [uniqueSubstitutionId]: teacherId }
   const [assignments, setAssignments] = useState({});
 
   const toggleAbsent = (id) => {
@@ -815,7 +824,6 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
     return false;
   };
 
-  // Calculate all necessary substitutions
   const substitutionData = useMemo(() => {
     if (absentIds.length === 0) return [];
 
@@ -829,13 +837,11 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
         if (periodIndex < 7 && subject && subject.trim() !== '') {
           
           const targetCodes = extractClassCodes(subject);
-
           const strictMatches = [];
           const generalMatches = [];
 
           teachers.forEach(t => {
-             if (t.id === absentId || absentIds.includes(t.id)) return; // Skip absent
-             
+             if (t.id === absentId || absentIds.includes(t.id)) return;
              const tSchedule = t.timetable?.[selectedDay];
              const tActivity = tSchedule?.[periodIndex];
              const isFree = !tActivity || tActivity.trim() === '';
@@ -849,7 +855,6 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
              }
           });
 
-          // Combine with a flag for UI
           const replacements = [
              ...strictMatches.map(t => ({ ...t, type: 'strict' })),
              ...generalMatches.map(t => ({ ...t, type: 'general' }))
@@ -868,11 +873,12 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
       });
     });
 
+    // Sort by Period as requested
     return results.sort((a, b) => {
-      if (a.absentTeacherName === b.absentTeacherName) {
-         return a.period - b.period;
+      if (a.period === b.period) {
+         return a.absentTeacherName.localeCompare(b.absentTeacherName);
       }
-      return a.absentTeacherName.localeCompare(b.absentTeacherName);
+      return a.period - b.period;
     });
   }, [selectedDay, absentIds, teachers, validClassCodes]);
 
@@ -889,7 +895,11 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
   };
 
   const handlePrint = () => {
+    const originalTitle = document.title;
+    const dateStr = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+    document.title = `${dateStr}_Substitution`;
     window.print();
+    document.title = originalTitle;
   };
 
   return (
@@ -1070,7 +1080,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
       {/* --- PRINT VIEW (VISIBILITY TOGGLED BY CSS) --- */}
       <div className="print-only hidden bg-white text-black p-4">
         <div className="text-center mb-6">
-          <h1 className="text-xl font-bold mb-1 uppercase">{selectedDay} - {new Date().toLocaleDateString('en-GB')}</h1>
+          <h1 className="text-xl font-bold mb-1 uppercase">{new Date().toLocaleDateString('en-GB')}</h1>
         </div>
         
         <table className="w-full border-collapse border border-black text-sm">
@@ -1351,157 +1361,160 @@ export default function App() {
   );
 
   return (
-    <div className="h-screen w-full flex flex-col overflow-hidden bg-slate-100 text-slate-800 font-sans print:h-auto print:overflow-visible">
-      
-      {/* --- SCREEN LAYOUT --- */}
-      <div className="screen-only flex-1 flex flex-col h-full overflow-hidden">
-        <header className="bg-slate-800 text-white shadow-md z-10 shrink-0">
-          <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="bg-blue-600 p-1.5 rounded text-white">
-                <Calendar className="w-5 h-5" />
-              </div>
-              <h1 className="font-bold text-xl tracking-tight hidden md:block">SchoolScheduler</h1>
-              <h1 className="font-bold text-xl tracking-tight md:hidden">SS</h1>
-            </div>
-            
-            <div className="hidden md:flex items-center gap-2">
-              <div className="flex bg-slate-700 rounded-lg p-1 gap-1 items-center mr-2">
-                <button 
-                  onClick={() => { setActiveTab('classes'); setSelectedTeacher(null); }}
-                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'classes' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
-                >
-                  Directory
-                </button>
-                <button 
-                  onClick={() => { setActiveTab('manage'); setSelectedTeacher(null); }}
-                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'manage' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
-                >
-                  Timetables
-                </button>
-                <button 
-                  onClick={() => setActiveTab('substitute')}
-                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'substitute' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
-                >
-                  Generate Subs
-                </button>
-              </div>
+    <div className="min-h-screen bg-slate-100 text-slate-800 font-sans flex flex-col h-screen overflow-hidden">
+      {/* Header */}
+      <header className="bg-slate-800 text-white shadow-md z-10 shrink-0 print:hidden">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+             <div className="bg-blue-600 p-1.5 rounded text-white">
+               <Calendar className="w-5 h-5" />
+             </div>
+             <h1 className="font-bold text-xl tracking-tight hidden md:block">SchoolScheduler</h1>
+             <h1 className="font-bold text-xl tracking-tight md:hidden">SS</h1>
+          </div>
+          
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-2">
+            <div className="flex bg-slate-700 rounded-lg p-1 gap-1 items-center mr-2">
               <button 
-                onClick={handleForceReloadDefaults}
-                disabled={importing}
-                className="p-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-md transition-colors"
-                title="Reload Default Teachers"
+                onClick={() => { setActiveTab('classes'); setSelectedTeacher(null); }}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'classes' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
               >
-                {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                Directory
+              </button>
+              <button 
+                onClick={() => { setActiveTab('manage'); setSelectedTeacher(null); }}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'manage' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
+              >
+                Timetables
+              </button>
+              <button 
+                onClick={() => setActiveTab('substitute')}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'substitute' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
+              >
+                Generate Subs
               </button>
             </div>
-
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-slate-300">
-              <Menu className="w-6 h-6" />
+            <button 
+              onClick={handleForceReloadDefaults}
+              disabled={importing}
+              className="p-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-md transition-colors"
+              title="Reload Default Teachers"
+            >
+              {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             </button>
           </div>
 
-          {mobileMenuOpen && (
-            <div className="md:hidden bg-slate-700 p-4 space-y-2 border-t border-slate-600">
-              <button 
-                  onClick={() => { setActiveTab('classes'); setSelectedTeacher(null); setMobileMenuOpen(false); }}
-                  className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === 'classes' ? 'bg-white text-slate-800' : 'text-slate-300'}`}
-                >
-                  Class Directory
-                </button>
-                <button 
-                  onClick={() => { setActiveTab('manage'); setSelectedTeacher(null); setMobileMenuOpen(false); }}
-                  className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === 'manage' ? 'bg-white text-slate-800' : 'text-slate-300'}`}
-                >
-                  Timetables
-                </button>
-                <button 
-                  onClick={() => { setActiveTab('substitute'); setMobileMenuOpen(false); }}
-                  className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === 'substitute' ? 'bg-white text-slate-800' : 'text-slate-300'}`}
-                >
-                  Generate Subs
-                </button>
-                <button 
-                onClick={handleForceReloadDefaults}
-                className="block w-full text-left px-4 py-2 rounded-md text-sm font-medium text-slate-300 flex items-center gap-2"
+          {/* Mobile Menu Button */}
+          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-slate-300">
+            <Menu className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Mobile Nav Dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-slate-700 p-4 space-y-2 border-t border-slate-600">
+             <button 
+                onClick={() => { setActiveTab('classes'); setSelectedTeacher(null); setMobileMenuOpen(false); }}
+                className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === 'classes' ? 'bg-white text-slate-800' : 'text-slate-300'}`}
               >
-                <RefreshCw className="w-4 h-4" /> Reload Defaults
+                Class Directory
               </button>
+              <button 
+                onClick={() => { setActiveTab('manage'); setSelectedTeacher(null); setMobileMenuOpen(false); }}
+                className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === 'manage' ? 'bg-white text-slate-800' : 'text-slate-300'}`}
+              >
+                Timetables
+              </button>
+              <button 
+                onClick={() => { setActiveTab('substitute'); setMobileMenuOpen(false); }}
+                className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === 'substitute' ? 'bg-white text-slate-800' : 'text-slate-300'}`}
+              >
+                Generate Subs
+              </button>
+              <button 
+              onClick={handleForceReloadDefaults}
+              className="block w-full text-left px-4 py-2 rounded-md text-sm font-medium text-slate-300 flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" /> Reload Defaults
+            </button>
+          </div>
+        )}
+      </header>
+
+      {/* Content Area */}
+      <main className="flex-1 p-2 md:p-4 overflow-hidden min-h-0 relative print:hidden">
+        
+        {authError && (
+          <div className="absolute top-4 left-4 right-4 z-50 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-sm flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-bold text-sm">Authentication Error</h3>
+              <p className="text-sm mt-1 opacity-90">{authError}</p>
+            </div>
+            <button onClick={() => setAuthError(null)} className="ml-auto text-red-400 hover:text-red-600">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+
+        <div className="max-w-7xl mx-auto h-full flex flex-col">
+          
+          {activeTab === 'classes' && (
+            <div className="h-full w-full">
+              <ClassDirectory 
+                classes={classes} 
+                onAddClass={addClass}
+                onUpdateClass={updateClass}
+                onDeleteClass={deleteClass}
+              />
             </div>
           )}
-        </header>
 
-        <main className="flex-1 p-2 md:p-4 overflow-hidden min-h-0 relative">
-          {authError && (
-            <div className="absolute top-4 left-4 right-4 z-50 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-sm flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
-              <div>
-                <h3 className="font-bold text-sm">Authentication Error</h3>
-                <p className="text-sm mt-1 opacity-90">{authError}</p>
-              </div>
-              <button onClick={() => setAuthError(null)} className="ml-auto text-red-400 hover:text-red-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          )}
-
-          <div className="max-w-7xl mx-auto h-full flex flex-col">
-            {activeTab === 'classes' && (
-              <div className="h-full w-full">
-                <ClassDirectory 
-                  classes={classes} 
-                  onAddClass={addClass}
-                  onUpdateClass={updateClass}
-                  onDeleteClass={deleteClass}
+          {activeTab === 'manage' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-0">
+              <div className="col-span-1 lg:col-span-3 h-[40vh] lg:h-full min-h-0">
+                <TeacherManager 
+                  teachers={teachers}
+                  onSelectTeacher={setSelectedTeacher}
+                  onDeleteTeacher={deleteTeacher}
+                  onAddTeacher={addTeacher}
                 />
               </div>
-            )}
-
-            {activeTab === 'manage' && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-0">
-                <div className="col-span-1 lg:col-span-3 h-[40vh] lg:h-full min-h-0">
-                  <TeacherManager 
-                    teachers={teachers}
-                    onSelectTeacher={setSelectedTeacher}
-                    onDeleteTeacher={deleteTeacher}
-                    onAddTeacher={addTeacher}
+              <div className="col-span-1 lg:col-span-9 h-full min-h-0">
+                {selectedTeacher ? (
+                  <TimetableEditor 
+                    teacher={selectedTeacher}
+                    definedClasses={classes}
+                    onUpdateTimetable={updateTimetable}
+                    onClose={() => setSelectedTeacher(null)}
                   />
-                </div>
-                <div className="col-span-1 lg:col-span-9 h-full min-h-0">
-                  {selectedTeacher ? (
-                    <TimetableEditor 
-                      teacher={selectedTeacher}
-                      definedClasses={classes}
-                      onUpdateTimetable={updateTimetable}
-                      onClose={() => setSelectedTeacher(null)}
-                    />
-                  ) : (
-                    <div className="hidden lg:flex h-full bg-white rounded-xl border border-slate-200 border-dashed flex-col items-center justify-center text-slate-400 p-8 text-center">
-                      <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                        <ArrowRight className="w-8 h-8 text-slate-300" />
-                      </div>
-                      <h3 className="text-lg font-medium text-slate-600 mb-1">Select a teacher</h3>
-                      <p className="max-w-sm text-sm opacity-75">Click a name from the list to edit their timetable.</p>
+                ) : (
+                  <div className="hidden lg:flex h-full bg-white rounded-xl border border-slate-200 border-dashed flex-col items-center justify-center text-slate-400 p-8 text-center">
+                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                      <ArrowRight className="w-8 h-8 text-slate-300" />
                     </div>
-                  )}
-                </div>
+                    <h3 className="text-lg font-medium text-slate-600 mb-1">Select a teacher</h3>
+                    <p className="max-w-sm text-sm opacity-75">Click a name from the list to edit their timetable.</p>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+          )}
 
-            {activeTab === 'substitute' && (
-              <SubstitutionGenerator teachers={teachers} definedClasses={classes} />
-            )}
-          </div>
-        </main>
-      </div>
-      
+          {activeTab === 'substitute' && (
+            <SubstitutionGenerator teachers={teachers} definedClasses={classes} />
+          )}
+
+        </div>
+      </main>
+
       {/* --- PRINT LAYOUT (ONLY VISIBLE WHEN PRINTING) --- */}
-      {/* This section uses 'display: none' by default via the 'print-only' class logic 
-          defined in the style tag above in previous iterations. We replicate it here. */}
+      {/* Note: This is rendered alongside the screen UI but hidden by default. 
+          The <style> tag inside SubstitutionGenerator handles the toggling via display:none/block */}
       {activeTab === 'substitute' && (
          <SubstitutionGenerator PrintMode={true} teachers={teachers} definedClasses={classes} />
       )}
-      
     </div>
   );
 }
