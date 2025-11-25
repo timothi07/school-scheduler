@@ -640,7 +640,7 @@ const ClassSelectorModal = ({ value, definedClasses, onClose, onSave }) => {
                     );
                   })
                 ) : (
-                  <span className="text-xs text-slate-400 italic">No divisions</span>
+                  <span className="text-xs text-slate-400 italic">No divisions added yet.</span>
                 )}
               </div>
             </div>
@@ -773,7 +773,7 @@ const TimetableEditor = ({ teacher, onUpdateTimetable, onClose, definedClasses }
 };
 
 // 4. Substitution Generator Component
-const SubstitutionGenerator = ({ teachers, definedClasses }) => {
+const SubstitutionGenerator = ({ teachers, definedClasses, PrintMode }) => {
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [absentIds, setAbsentIds] = useState([]);
   const [assignments, setAssignments] = useState({});
@@ -828,7 +828,6 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
     return false;
   };
 
-  // Calculate substitutions
   const substitutionData = useMemo(() => {
     if (absentIds.length === 0) return [];
     const results = [];
@@ -903,6 +902,65 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
     document.title = originalTitle;
   };
 
+  // If we are in print mode (invoked invisibly), just return the print layout
+  if (PrintMode) {
+    return (
+      <div className="print-only hidden bg-white text-black p-4">
+        <div className="text-center mb-6">
+          <h1 className="text-xl font-bold mb-1 uppercase">{selectedDay} - {new Date().toLocaleDateString('en-GB')}</h1>
+        </div>
+        
+        <table className="w-full border-collapse border border-black text-sm">
+          <thead>
+            <tr>
+              <th className="border border-black p-2 w-24 bg-white text-center">Period</th>
+              <th className="border border-black p-2 w-40 bg-white text-center">Class</th>
+              <th className="border border-black p-2 w-64 bg-white text-center">Absent Teacher</th>
+              <th className="border border-black p-2 bg-white font-bold text-center">Substitute Teacher</th>
+            </tr>
+          </thead>
+          <tbody>
+            {substitutionData.map((item, idx) => {
+              const assignedTeacherId = assignments[item.id];
+              // Find teacher details to check type for coloring
+              const teacherObj = item.replacements.find(t => t.id === assignedTeacherId);
+              const subName = teacherObj ? teacherObj.name : (teachers.find(t => t.id === assignedTeacherId)?.name || "");
+              const subType = teacherObj ? teacherObj.type : "";
+
+              // Color Scheme
+              let colorClass = "text-black";
+              if (subType === 'strict') colorClass = "text-green-700";
+              else if (subType === 'general') colorClass = "text-amber-600";
+
+              return (
+                <tr key={idx}>
+                  <td className="border border-black p-2 font-bold bg-white text-center align-middle text-lg">{item.period}</td>
+                  <td className="border border-black p-2 font-bold bg-white text-center align-middle text-lg">{item.classInfo}</td>
+                  <td className="border border-black p-2 font-bold bg-white text-center align-middle text-red-600 text-lg">{item.absentTeacherName}</td>
+                  <td className="border border-black p-2 text-center align-middle h-16">
+                    {subName ? (
+                      <span className={`font-bold text-xl ${colorClass}`}>{subName}</span>
+                    ) : (
+                      <span className="text-gray-400">____________________</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+            {substitutionData.length === 0 && (
+               <tr>
+                 <td colSpan="4" className="p-8 text-center text-slate-500 italic border border-black">
+                   No substitutions needed for this day.
+                 </td>
+               </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  // Normal Screen Mode
   return (
     <div className="flex flex-col h-full w-full">
       {/* Style Injection for Print */}
@@ -1076,60 +1134,6 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
             )}
           </div>
         </div>
-      </div>
-
-      {/* --- PRINT VIEW (VISIBILITY TOGGLED BY CSS) --- */}
-      <div className="print-only hidden bg-white text-black p-4">
-        <div className="text-center mb-6">
-          <h1 className="text-xl font-bold mb-1 uppercase">{selectedDay} - {new Date().toLocaleDateString('en-GB')}</h1>
-        </div>
-        
-        <table className="w-full border-collapse border border-black text-sm">
-          <thead>
-            <tr>
-              <th className="border border-black p-2 w-24 bg-white text-center">Period</th>
-              <th className="border border-black p-2 w-40 bg-white text-center">Class</th>
-              <th className="border border-black p-2 w-64 bg-white text-center">Absent Teacher</th>
-              <th className="border border-black p-2 bg-white font-bold text-center">Substitute Teacher</th>
-            </tr>
-          </thead>
-          <tbody>
-            {substitutionData.map((item, idx) => {
-              const assignedTeacherId = assignments[item.id];
-              // Find teacher details to check type for coloring
-              const teacherObj = item.replacements.find(t => t.id === assignedTeacherId);
-              const subName = teacherObj ? teacherObj.name : (teachers.find(t => t.id === assignedTeacherId)?.name || "");
-              const subType = teacherObj ? teacherObj.type : "";
-
-              // Color Scheme
-              let colorClass = "text-black";
-              if (subType === 'strict') colorClass = "text-green-700";
-              else if (subType === 'general') colorClass = "text-amber-600";
-
-              return (
-                <tr key={idx}>
-                  <td className="border border-black p-2 font-bold bg-white text-center align-middle text-lg">{item.period}</td>
-                  <td className="border border-black p-2 font-bold bg-white text-center align-middle text-lg">{item.classInfo}</td>
-                  <td className="border border-black p-2 font-bold bg-white text-center align-middle text-red-600 text-lg">{item.absentTeacherName}</td>
-                  <td className="border border-black p-2 text-center align-middle h-16">
-                    {subName ? (
-                      <span className={`font-bold text-xl ${colorClass}`}>{subName}</span>
-                    ) : (
-                      <span className="text-gray-400">____________________</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-            {substitutionData.length === 0 && (
-               <tr>
-                 <td colSpan="4" className="p-8 text-center text-slate-500 italic border border-black">
-                   No substitutions needed for this day.
-                 </td>
-               </tr>
-            )}
-          </tbody>
-        </table>
       </div>
     </div>
   );
@@ -1478,6 +1482,14 @@ export default function App() {
           </div>
         </main>
       </div>
+      
+      {/* --- PRINT LAYOUT (ONLY VISIBLE WHEN PRINTING) --- */}
+      {/* This section uses 'display: none' by default via the 'print-only' class logic 
+          defined in the style tag above in previous iterations. We replicate it here. */}
+      {activeTab === 'substitute' && (
+         <SubstitutionGenerator PrintMode={true} teachers={teachers} definedClasses={classes} />
+      )}
+      
     </div>
   );
 }
