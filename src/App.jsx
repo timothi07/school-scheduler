@@ -815,6 +815,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
     return false;
   };
 
+  // Calculate all necessary substitutions
   const substitutionData = useMemo(() => {
     if (absentIds.length === 0) return [];
 
@@ -829,37 +830,58 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
           
           const targetCodes = extractClassCodes(subject);
 
-          const replacements = teachers.filter(t => {
-            if (t.id === absentId) return false;
-            if (absentIds.includes(t.id)) return false;
-            
-            const tSchedule = t.timetable?.[selectedDay];
-            const tActivity = tSchedule?.[periodIndex];
-            const isFree = !tActivity || tActivity.trim() === '';
-            if (!isFree) return false;
+          // Logic: 
+          // 1. Strict Match: Teachers free AND teaching this class
+          // 2. General Match: Teachers free (but not teaching this class)
+          
+          const strictMatches = [];
+          const generalMatches = [];
 
-            if (targetCodes.length > 0) {
-               return teacherTeachesAny(t, targetCodes);
-            } else {
-               return false;
-            }
+          teachers.forEach(t => {
+             if (t.id === absentId || absentIds.includes(t.id)) return; // Skip absent
+             
+             const tSchedule = t.timetable?.[selectedDay];
+             const tActivity = tSchedule?.[periodIndex];
+             const isFree = !tActivity || tActivity.trim() === '';
+             
+             if (isFree) {
+                if (targetCodes.length > 0 && teacherTeachesAny(t, targetCodes)) {
+                   strictMatches.push(t);
+                } else {
+                   generalMatches.push(t);
+                }
+             }
           });
 
+          // Combine with a flag for UI
+          const replacements = [
+             ...strictMatches.map(t => ({ ...t, type: 'strict' })),
+             ...generalMatches.map(t => ({ ...t, type: 'general' }))
+          ];
+
           results.push({
-            id: `${absentId}-${periodIndex}`, 
+            id: `${absentId}-${periodIndex}`, // Unique ID for this substitution slot
             period: periodIndex + 1,
             classInfo: subject,
             targetCodes: targetCodes,
             absentTeacherName: absentTeacher.name,
+            absentTeacherId: absentId,
             replacements: replacements
           });
         }
       });
     });
 
-    return results.sort((a, b) => a.period - b.period);
+    // Sort by absent teacher name, then by period (matches screenshot logic)
+    return results.sort((a, b) => {
+      if (a.absentTeacherName === b.absentTeacherName) {
+         return a.period - b.period;
+      }
+      return a.absentTeacherName.localeCompare(b.absentTeacherName);
+    });
   }, [selectedDay, absentIds, teachers, validClassCodes]);
 
+  // Helper to check if a teacher is already booked in this period (for a DIFFERENT class)
   const isTeacherBookedInPeriod = (teacherId, period, currentSlotId) => {
     for (const [slotId, assignedTeacherId] of Object.entries(assignments)) {
       const assignedItem = substitutionData.find(item => item.id === slotId);
@@ -881,7 +903,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
       {/* Style Injection for Print */}
       <style>{`
         @media print {
-          @page { margin: 10mm; size: auto; }
+          @page { margin: 10mm; size: landscape; }
           body, html, #root { 
             height: auto !important; 
             overflow: visible !important; 
@@ -907,7 +929,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
 
           /* Grid Table Styles */
           table { width: 100%; border-collapse: collapse; border: 2px solid black; }
-          th, td { border: 1px solid black; padding: 8px; text-align: center; vertical-align: middle; }
+          th, td { border: 1px solid black; padding: 8px; text-align: center; vertical-align: top; height: 60px; }
           th { background-color: #f3f4f6; font-weight: bold; }
           thead { display: table-header-group; }
           tr { page-break-inside: avoid; }
@@ -1020,20 +1042,27 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
                           onChange={(e) => setAssignments(prev => ({ ...prev, [item.id]: e.target.value }))}
                         >
                           <option value="">-- Select Teacher --</option>
-                          {item.replacements.map(r => {
-                            const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
-                            return (
-                              <option key={r.id} value={r.id} disabled={isBooked} className={isBooked ? "text-slate-300 bg-slate-50" : ""}>
-                                {r.name} {isBooked ? "(Busy)" : ""}
-                              </option>
-                            );
-                          })}
+                          <optgroup label="Subject Teachers (Preferred)">
+                            {item.replacements.filter(r => r.type === 'strict').map(r => {
+                              const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
+                              return (
+                                <option key={r.id} value={r.id} disabled={isBooked} className={isBooked ? "text-slate-300" : "text-green-700 font-bold"}>
+                                  {r.name} {isBooked ? "(Busy)" : ""}
+                                </option>
+                              );
+                            })}
+                          </optgroup>
+                          <optgroup label="Other Available Teachers">
+                            {item.replacements.filter(r => r.type === 'general').map(r => {
+                              const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
+                              return (
+                                <option key={r.id} value={r.id} disabled={isBooked} className={isBooked ? "text-slate-300" : "text-slate-700"}>
+                                  {r.name} {isBooked ? "(Busy)" : ""}
+                                </option>
+                              );
+                            })}
+                          </optgroup>
                         </select>
-                        {item.replacements.length === 0 && (
-                          <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" /> No subject teachers available.
-                          </p>
-                        )}
                       </div>
                     </div>
                   );
@@ -1047,16 +1076,15 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
       {/* --- PRINT VIEW (VISIBILITY TOGGLED BY CSS) --- */}
       <div className="print-only hidden bg-white text-black p-4">
         <div className="text-center mb-6">
-          <h1 className="text-xl font-bold mb-1 uppercase">Substitution Schedule</h1>
-          <p className="text-sm text-slate-600">{new Date().toLocaleDateString()} | {selectedDay}</p>
+          <h1 className="text-xl font-bold mb-1 uppercase">{new Date().toLocaleDateString('en-GB')}</h1>
         </div>
         
         <table className="w-full border-collapse border border-black text-sm">
           <thead>
             <tr>
-              <th className="border border-black p-2 w-24 bg-gray-100"></th>
+              <th className="border border-black p-2 w-24 bg-white"></th>
               {PERIODS.map(p => (
-                <th key={p} className="border border-black p-2 bg-gray-100 font-bold text-center">
+                <th key={p} className="border border-black p-2 bg-white font-bold text-center">
                   {p}
                 </th>
               ))}
@@ -1069,7 +1097,7 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
               
               return (
                 <tr key={absentId}>
-                  <td className="border border-black p-2 font-bold bg-gray-50 text-center align-middle">
+                  <td className="border border-black p-2 font-bold bg-white text-center align-middle text-red-600 text-lg">
                     {teacher.name}
                   </td>
                   {PERIODS.map((p, index) => {
@@ -1078,27 +1106,43 @@ const SubstitutionGenerator = ({ teachers, definedClasses }) => {
                     
                     let content = "---";
                     let subName = "";
+                    let subType = "";
                     
                     if (item) {
                        content = item.classInfo;
                        const assignedId = assignments[slotId];
-                       const assignedTeacher = teachers.find(t => t.id === assignedId);
-                       subName = assignedTeacher ? assignedTeacher.name : "";
+                       // Find the assigned teacher in the replacements array to know their type
+                       const replacementInfo = item.replacements.find(r => r.id === assignedId);
+                       if (replacementInfo) {
+                         subName = replacementInfo.name;
+                         subType = replacementInfo.type;
+                       } else if (assignedId) {
+                         // Fallback if just finding by ID in general list
+                         const t = teachers.find(tr => tr.id === assignedId);
+                         subName = t?.name || "";
+                       }
                     }
                     
+                    // Determine Color Class for Print
+                    let colorClass = "text-black";
+                    if (subType === 'strict') colorClass = "text-green-700";
+                    else if (subType === 'general') colorClass = "text-amber-600";
+
                     return (
-                      <td key={p} className="border border-black p-1 h-14 text-center align-middle">
+                      <td key={p} className="border border-black p-1 h-16 text-center align-middle">
                         {item ? (
-                          <div className="flex flex-col justify-center h-full">
-                            <span className="text-xs mb-1 font-medium">{content}</span>
-                            {subName && (
-                              <span className="font-bold text-black text-sm border-t border-dotted border-gray-400 pt-1 mt-1 block">
+                          <div className="flex flex-col justify-between h-full py-1">
+                            <span className="text-sm font-medium">{content}</span>
+                            {subName ? (
+                              <span className={`font-bold text-base ${colorClass}`}>
                                 {subName}
                               </span>
+                            ) : (
+                              <span className="text-xs text-red-300 italic">Required</span>
                             )}
                           </div>
                         ) : (
-                          <span className="text-gray-300 text-xs">---</span>
+                          <span className="text-gray-400">---</span>
                         )}
                       </td>
                     );
