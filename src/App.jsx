@@ -80,7 +80,7 @@ const INITIAL_CLASSES = [
 
 const INITIAL_TEACHERS = [
   {
-    name: "RIJI",
+    name: "RP",
     timetable: {
       "Monday": ["10A", "8A, 8C", "10C", "", "10B", "", "9A, 9B"],
       "Tuesday": ["10A", "8A, 8C", "9C", "", "8C", "9A, 9C", "10A, 10C"],
@@ -290,7 +290,7 @@ const INITIAL_TEACHERS = [
     }
   },
   {
-    name: "JB",
+    name: "JT",
     timetable: {
       "Monday": ["6A", "", "6B", "5B", "", "7B", "7A"],
       "Tuesday": ["6A", "6B", "", "7B", "7A", "5A", ""],
