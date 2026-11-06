@@ -1360,7 +1360,7 @@ const SubstitutionGenerator = ({
                     
                     let colorClass = "text-black";
                     if (subType === 'strict') colorClass = "text-green-700";
-                    else if (subType === 'general') colorClass = "text-amber-700";
+                    else if (subType === 'general') colorClass = "text-orange-500";
 
                     return (
                       <td key={p}>
@@ -1622,7 +1622,7 @@ const SubstitutionGenerator = ({
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                                 assignedRep.type === 'strict' 
                                   ? 'bg-emerald-100 text-emerald-700' 
-                                  : 'bg-amber-100 text-amber-700'
+                                  : 'bg-orange-100 text-orange-600'
                               }`}>
                                 {assignedRep.type === 'strict' ? 'Class Teacher Match' : 'General Free Staff'}
                               </span>
@@ -1976,6 +1976,12 @@ export default function App() {
           .print-table tr {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
+          }
+          .text-orange-500 {
+            color: #f97316 !important;
+          }
+          .text-green-700 {
+            color: #15803d !important;
           }
         }
       `}</style>
