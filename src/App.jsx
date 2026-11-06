@@ -222,7 +222,7 @@ const INITIAL_TEACHERS = [
     }
   },
   {
-    name: "MN",
+    name: "AMG",
     timetable: {
       "Monday": ["", "9I", "", "8J", "9C", "", "10H"],
       "Tuesday": ["9E", "", "8G", "", "9C", "", "10H"],
