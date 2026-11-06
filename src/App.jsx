@@ -25,10 +25,10 @@ import {
   Calendar, 
   Users, 
   Save, 
-  AlertCircle, 
   CheckCircle2, 
   Search,
   ArrowRight,
+  ArrowLeft,
   Clock,
   BookOpen,
   X,
@@ -36,28 +36,23 @@ import {
   RefreshCw,
   AlertTriangle,
   Printer,
-  Menu
+  Menu,
+  Loader2,
+  Sparkles,
+  RotateCcw,
+  UserCheck
 } from 'lucide-react';
 
 // --- Firebase Configuration ---
 const firebaseConfig = {
-
   apiKey: "AIzaSyCnGYvKV5RM920W9MfVK0vE9_OFDh9qOt4",
-
   authDomain: "school-scheduler-be0ba.firebaseapp.com",
-
   projectId: "school-scheduler-be0ba",
-
   storageBucket: "school-scheduler-be0ba.firebasestorage.app",
-
   messagingSenderId: "293883160030",
-
   appId: "1:293883160030:web:96f28a8cdef6415a42294f",
-
   measurementId: "G-DQWDYSGX12"
-
 };
-
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -498,6 +493,18 @@ const INITIAL_TEACHERS = [
   }
 ];
 
+// Helper: Count weekly periods for a teacher
+const getWeeklyPeriodsCount = (timetable) => {
+  if (!timetable) return 0;
+  let count = 0;
+  DAYS.forEach(day => {
+    (timetable[day] || []).forEach(slot => {
+      if (slot && slot.trim() !== '') count++;
+    });
+  });
+  return count;
+};
+
 // --- Components ---
 
 // 1. Class Directory Component
@@ -506,16 +513,36 @@ const ClassDirectory = ({ classes, onAddClass, onDeleteClass, onUpdateClass }) =
   const [newDivName, setNewDivName] = useState('');
   const [selectedClassId, setSelectedClassId] = useState(null);
 
+  const sortedClasses = useMemo(() => {
+    return [...classes].sort((a, b) => {
+      const numA = parseInt(a.name) || 0;
+      const numB = parseInt(b.name) || 0;
+      return numA - numB || a.name.localeCompare(b.name);
+    });
+  }, [classes]);
+
+  useEffect(() => {
+    if (!selectedClassId && sortedClasses.length > 0) {
+      setSelectedClassId(sortedClasses[0].id);
+    }
+  }, [sortedClasses, selectedClassId]);
+
   const handleAddClass = (e) => {
     e.preventDefault();
     if (!newClassName.trim()) return;
-    onAddClass(newClassName);
+    onAddClass(newClassName.trim());
     setNewClassName('');
   };
 
-  const handleAddDivision = async (classId, currentDivisions) => {
+  const handleAddDivision = async (e, classId, currentDivisions) => {
+    e.preventDefault();
     if (!newDivName.trim()) return;
-    const updatedDivisions = [...(currentDivisions || []), newDivName.trim().toUpperCase()].sort();
+    const divUpper = newDivName.trim().toUpperCase();
+    if ((currentDivisions || []).includes(divUpper)) {
+      setNewDivName('');
+      return;
+    }
+    const updatedDivisions = [...(currentDivisions || []), divUpper].sort();
     await onUpdateClass(classId, updatedDivisions);
     setNewDivName('');
   };
@@ -525,48 +552,61 @@ const ClassDirectory = ({ classes, onAddClass, onDeleteClass, onUpdateClass }) =
     await onUpdateClass(classId, updatedDivisions);
   };
 
-  const sortedClasses = [...classes].sort((a, b) => {
-    const numA = parseInt(a.name) || 0;
-    const numB = parseInt(b.name) || 0;
-    return numA - numB || a.name.localeCompare(b.name);
-  });
+  const selectedClass = classes.find(c => c.id === selectedClassId);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full overflow-hidden print:hidden">
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 h-full overflow-hidden print:hidden">
       {/* Class List */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl shrink-0">
-          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+      <div className="md:col-span-5 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
+        <div className="p-4 border-b border-slate-100 bg-slate-50/70 rounded-t-xl shrink-0">
+          <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-blue-600" />
             Class Standards
           </h2>
-          <p className="text-xs text-slate-500 mt-1">Add grades (e.g., 8, 9, 10)</p>
+          <p className="text-xs text-slate-500 mt-0.5">Manage grades and active divisions</p>
         </div>
-        <div className="p-4 border-b border-slate-100 shrink-0">
+        <div className="p-3 border-b border-slate-100 shrink-0">
           <form onSubmit={handleAddClass} className="flex gap-2">
             <input
               type="text"
-              placeholder="Class..."
-              className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-full"
+              placeholder="Add Standard (e.g., 8, 9, 10)..."
+              className="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-full"
               value={newClassName}
               onChange={(e) => setNewClassName(e.target.value)}
             />
-            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-              <Plus className="w-4 h-4" />
+            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1 text-sm font-medium">
+              <Plus className="w-4 h-4" /> Add
             </button>
           </form>
         </div>
-        <div className="overflow-y-auto flex-1 p-2 space-y-1 min-h-0">
+        <div className="overflow-y-auto flex-1 p-2 space-y-1.5 min-h-0">
           {sortedClasses.map(cls => (
             <div 
               key={cls.id}
               onClick={() => setSelectedClassId(cls.id)}
-              className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all border ${selectedClassId === cls.id ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-300' : 'bg-white border-transparent hover:bg-slate-50'}`}
+              className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border ${
+                selectedClassId === cls.id 
+                  ? 'bg-blue-50/80 border-blue-200 ring-1 ring-blue-300' 
+                  : 'bg-white border-slate-100 hover:bg-slate-50'
+              }`}
             >
-              <span className="font-bold text-slate-700">Class {cls.name}</span>
+              <div className="flex items-center gap-3">
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm ${
+                  selectedClassId === cls.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'
+                }`}>
+                  {cls.name}
+                </div>
+                <div>
+                  <div className="font-bold text-slate-800 text-sm">Standard {cls.name}</div>
+                  <div className="text-xs text-slate-500">
+                    {(cls.divisions || []).length} Divisions ({(cls.divisions || []).join(', ') || 'None'})
+                  </div>
+                </div>
+              </div>
               <button 
                 onClick={(e) => { e.stopPropagation(); onDeleteClass(cls.id); }}
-                className="text-slate-400 hover:text-red-500 p-1"
+                className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                title="Delete Class"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -576,58 +616,70 @@ const ClassDirectory = ({ classes, onAddClass, onDeleteClass, onUpdateClass }) =
       </div>
 
       {/* Divisions Manager */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl shrink-0">
-          <h2 className="text-lg font-bold text-slate-800">Divisions</h2>
-          <p className="text-xs text-slate-500 mt-1">
-            {selectedClassId 
-              ? `Divisions for Class ${classes.find(c => c.id === selectedClassId)?.name}` 
-              : 'Select a class to manage divisions'}
+      <div className="md:col-span-7 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
+        <div className="p-4 border-b border-slate-100 bg-slate-50/70 rounded-t-xl shrink-0">
+          <h2 className="text-base font-bold text-slate-800">
+            {selectedClass ? `Standard ${selectedClass.name} — Divisions` : 'Divisions'}
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            {selectedClass 
+              ? `Add or remove divisions for Class ${selectedClass.name}` 
+              : 'Select a class standard on the left to manage its divisions'}
           </p>
         </div>
         
-        {selectedClassId ? (
+        {selectedClass ? (
           <>
-            <div className="p-4 border-b border-slate-100 shrink-0">
-               <div className="flex gap-2">
+            <div className="p-3 border-b border-slate-100 shrink-0">
+              <form 
+                onSubmit={(e) => handleAddDivision(e, selectedClass.id, selectedClass.divisions)} 
+                className="flex gap-2"
+              >
                 <input
                   type="text"
-                  placeholder="Div..."
-                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none uppercase w-full"
+                  placeholder="New Division (e.g., A, B, C)..."
+                  className="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none uppercase w-full"
                   value={newDivName}
                   onChange={(e) => setNewDivName(e.target.value)}
                   maxLength={2}
                 />
                 <button 
-                  onClick={() => handleAddDivision(selectedClassId, classes.find(c => c.id === selectedClassId)?.divisions)}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                  type="submit"
+                  className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-1 text-sm font-medium"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-4 h-4" /> Add Division
                 </button>
-              </div>
+              </form>
             </div>
-            <div className="p-4 flex-1 overflow-y-auto min-h-0">
-              <div className="flex flex-wrap gap-3">
-                {classes.find(c => c.id === selectedClassId)?.divisions?.map((div, idx) => (
-                  <span key={idx} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 font-bold border border-slate-200">
-                    {div}
+            <div className="p-5 flex-1 overflow-y-auto min-h-0">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {selectedClass.divisions?.map((div, idx) => (
+                  <div 
+                    key={idx} 
+                    className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-50 text-slate-800 font-bold border border-slate-200 hover:border-slate-300 transition-all"
+                  >
+                    <span className="text-sm">{selectedClass.name}{div}</span>
                     <button 
-                      onClick={() => handleRemoveDivision(selectedClassId, classes.find(c => c.id === selectedClassId)?.divisions, div)}
-                      className="w-4 h-4 rounded-full bg-slate-300 text-white hover:bg-red-500 flex items-center justify-center"
+                      onClick={() => handleRemoveDivision(selectedClass.id, selectedClass.divisions, div)}
+                      className="w-5 h-5 rounded-full text-slate-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition-colors"
+                      title={`Remove ${selectedClass.name}${div}`}
                     >
-                      <X className="w-3 h-3" />
+                      <X className="w-3.5 h-3.5" />
                     </button>
-                  </span>
+                  </div>
                 ))}
-                {(!classes.find(c => c.id === selectedClassId)?.divisions?.length) && (
-                  <p className="text-sm text-slate-400 italic">No divisions added yet.</p>
+                {(!selectedClass.divisions?.length) && (
+                  <p className="col-span-full text-sm text-slate-400 italic py-8 text-center">
+                    No divisions added for Standard {selectedClass.name} yet.
+                  </p>
                 )}
               </div>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-slate-400 bg-slate-50">
-            <ArrowRight className="w-8 h-8 opacity-20" />
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50">
+            <ArrowRight className="w-8 h-8 opacity-20 mb-2" />
+            <span className="text-sm">Select a class standard</span>
           </div>
         )}
       </div>
@@ -636,42 +688,48 @@ const ClassDirectory = ({ classes, onAddClass, onDeleteClass, onUpdateClass }) =
 };
 
 // 2. Teacher List & Add Component
-const TeacherManager = ({ teachers, onSelectTeacher, onDeleteTeacher, onAddTeacher }) => {
+const TeacherManager = ({ teachers, selectedTeacherId, onSelectTeacher, onDeleteTeacher, onAddTeacher }) => {
   const [newTeacherName, setNewTeacherName] = useState('');
   const [filter, setFilter] = useState('');
 
   const handleAdd = (e) => {
     e.preventDefault();
     if (!newTeacherName.trim()) return;
-    onAddTeacher(newTeacherName);
+    onAddTeacher(newTeacherName.trim().toUpperCase());
     setNewTeacherName('');
   };
 
-  const filteredTeachers = teachers
-    .filter(t => t.name.toLowerCase().includes(filter.toLowerCase()))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const filteredTeachers = useMemo(() => {
+    return teachers
+      .filter(t => t.name.toLowerCase().includes(filter.toLowerCase()))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [teachers, filter]);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col overflow-hidden">
-      <div className="p-4 border-b border-slate-100 bg-slate-50 rounded-t-xl shrink-0">
-        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+      <div className="p-4 border-b border-slate-100 bg-slate-50/70 rounded-t-xl shrink-0 flex items-center justify-between">
+        <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
           <Users className="w-5 h-5 text-blue-600" />
           Staff Directory
         </h2>
+        <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+          {teachers.length}
+        </span>
       </div>
       
-      <div className="p-4 border-b border-slate-100 shrink-0">
-        <form onSubmit={handleAdd} className="flex gap-2 mb-3">
+      <div className="p-3 border-b border-slate-100 shrink-0 space-y-2.5">
+        <form onSubmit={handleAdd} className="flex gap-2">
           <input
             type="text"
-            placeholder="Add Teacher..."
-            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all w-full"
+            placeholder="Add Teacher Code/Name..."
+            className="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all w-full"
             value={newTeacherName}
             onChange={(e) => setNewTeacherName(e.target.value)}
           />
           <button 
             type="submit" 
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-1"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg font-medium transition-colors flex items-center justify-center shrink-0"
+            title="Add Teacher"
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -680,11 +738,19 @@ const TeacherManager = ({ teachers, onSelectTeacher, onDeleteTeacher, onAddTeach
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
           <input 
             type="text" 
-            placeholder="Search..."
-            className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-400"
+            placeholder="Search staff..."
+            className="w-full pl-9 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-400 focus:bg-white transition-all"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           />
+          {filter && (
+            <button 
+              onClick={() => setFilter('')}
+              className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -694,27 +760,44 @@ const TeacherManager = ({ teachers, onSelectTeacher, onDeleteTeacher, onAddTeach
             No teachers found.
           </div>
         ) : (
-          filteredTeachers.map(teacher => (
-            <div 
-              key={teacher.id} 
-              onClick={() => onSelectTeacher(teacher)}
-              className="group flex items-center justify-between p-3 rounded-lg hover:bg-blue-50 cursor-pointer border border-transparent hover:border-blue-100 transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-bold shrink-0">
-                  {teacher.name.charAt(0).toUpperCase()}
-                </div>
-                <span className="font-medium text-slate-700 group-hover:text-blue-700 truncate">{teacher.name}</span>
-              </div>
-              <button 
-                onClick={(e) => { e.stopPropagation(); onDeleteTeacher(teacher.id); }}
-                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-all z-10 shrink-0"
-                title="Delete Teacher"
+          filteredTeachers.map(teacher => {
+            const isSelected = teacher.id === selectedTeacherId;
+            const weeklyPeriods = getWeeklyPeriodsCount(teacher.timetable);
+            return (
+              <div 
+                key={teacher.id} 
+                onClick={() => onSelectTeacher(teacher)}
+                className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer border transition-all ${
+                  isSelected 
+                    ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-300' 
+                    : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200'
+                }`}
               >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          ))
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
+                    isSelected ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {teacher.name.substring(0, 3).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <div className={`font-bold text-sm truncate ${isSelected ? 'text-blue-900' : 'text-slate-700'}`}>
+                      {teacher.name}
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      {weeklyPeriods} periods / week
+                    </div>
+                  </div>
+                </div>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); onDeleteTeacher(teacher.id); }}
+                  className="p-1.5 text-slate-400 opacity-70 group-hover:opacity-100 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all shrink-0"
+                  title="Delete Teacher"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          })
         )}
       </div>
     </div>
@@ -726,18 +809,21 @@ const ClassSelectorModal = ({ value, definedClasses, onClose, onSave }) => {
   const [selected, setSelected] = useState(new Set());
   const [customText, setCustomText] = useState('');
 
+  const sortedClasses = useMemo(() => {
+    return [...definedClasses].sort((a, b) => (parseInt(a.name) || 0) - (parseInt(b.name) || 0));
+  }, [definedClasses]);
+
   useEffect(() => {
     const initialSet = new Set();
     if (value) {
       const parts = value.split(',').map(s => s.trim().toUpperCase());
       parts.forEach(p => {
-        let found = false;
         definedClasses.forEach(cls => {
           (cls.divisions || []).forEach(div => {
             const code = `${cls.name}${div}`.toUpperCase();
-            if (p.includes(code)) {
+            const regex = new RegExp(`\\b${code}\\b`, 'i');
+            if (regex.test(p)) {
               initialSet.add(code);
-              found = true;
             }
           });
         });
@@ -745,11 +831,11 @@ const ClassSelectorModal = ({ value, definedClasses, onClose, onSave }) => {
       
       let remaining = value;
       definedClasses.forEach(cls => {
-          (cls.divisions || []).forEach(div => {
-            const code = `${cls.name}${div}`;
-            const regex = new RegExp(`${code}[, ]*`, 'gi');
-            remaining = remaining.replace(regex, '');
-          });
+        (cls.divisions || []).forEach(div => {
+          const code = `${cls.name}${div}`;
+          const regex = new RegExp(`\\b${code}\\b[, ]*`, 'gi');
+          remaining = remaining.replace(regex, '');
+        });
       });
       setCustomText(remaining.replace(/^[,\s]+|[,\s]+$/g, '')); 
     }
@@ -764,25 +850,34 @@ const ClassSelectorModal = ({ value, definedClasses, onClose, onSave }) => {
   };
 
   const handleSave = () => {
-    let result = Array.from(selected).sort().join(', ');
-    if (customText) {
-      result = result ? `${result} ${customText}` : customText;
+    let result = Array.from(selected).sort((a, b) => {
+      const numA = parseInt(a) || 0;
+      const numB = parseInt(b) || 0;
+      return numA - numB || a.localeCompare(b);
+    }).join(', ');
+    if (customText.trim()) {
+      result = result ? `${result} ${customText.trim()}` : customText.trim();
     }
     onSave(result);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md flex flex-col max-h-[90vh]">
-        <div className="p-4 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="font-bold text-lg text-slate-800">Select Classes</h3>
-          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded-full"><X className="w-5 h-5" /></button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh] border border-slate-200">
+        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+          <div>
+            <h3 className="font-bold text-base text-slate-800">Assign Class to Slot</h3>
+            <p className="text-xs text-slate-500">Select one or more divisions for combined classes</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 hover:bg-slate-200 rounded-full text-slate-500">
+            <X className="w-5 h-5" />
+          </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
-          {definedClasses.map(cls => (
+        <div className="flex-1 overflow-y-auto p-4 space-y-5">
+          {sortedClasses.map(cls => (
             <div key={cls.id}>
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 border-b border-slate-100 pb-1">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5 border-b border-slate-100 pb-1">
                 Standard {cls.name}
               </h4>
               <div className="flex flex-wrap gap-2">
@@ -793,12 +888,13 @@ const ClassSelectorModal = ({ value, definedClasses, onClose, onSave }) => {
                     return (
                       <button
                         key={div}
+                        type="button"
                         onClick={() => toggle(code)}
                         className={`
-                          px-4 py-2 rounded-lg text-sm font-bold border transition-all
+                          px-3.5 py-2 rounded-lg text-xs font-bold border transition-all
                           ${isSelected 
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
-                            : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:bg-slate-50'
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs ring-2 ring-blue-200' 
+                            : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-slate-50'
                           }
                         `}
                       >
@@ -807,27 +903,42 @@ const ClassSelectorModal = ({ value, definedClasses, onClose, onSave }) => {
                     );
                   })
                 ) : (
-                  <span className="text-xs text-slate-400 italic">No divisions added yet.</span>
+                  <span className="text-xs text-slate-400 italic">No divisions configured.</span>
                 )}
               </div>
             </div>
           ))}
           
           <div>
-             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Subject / Note</label>
-             <input 
-               type="text" 
-               placeholder="e.g. Math, Eng, Library..."
-               className="w-full p-2 border border-slate-300 rounded-lg text-sm"
-               value={customText}
-               onChange={e => setCustomText(e.target.value)}
-             />
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">
+              Optional Note / Subject Tag
+            </label>
+            <input 
+              type="text" 
+              placeholder="e.g., IT Lab, Mal II, PT..."
+              className="w-full p-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              value={customText}
+              onChange={e => setCustomText(e.target.value)}
+            />
           </div>
         </div>
 
-        <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-xl flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-slate-600 font-medium text-sm hover:bg-slate-200 rounded-lg">Cancel</button>
-          <button onClick={handleSave} className="px-6 py-2 bg-blue-600 text-white font-medium text-sm rounded-lg hover:bg-blue-700 shadow-sm">Done</button>
+        <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex justify-between items-center">
+          <button 
+            type="button"
+            onClick={() => { setSelected(new Set()); setCustomText(''); }}
+            className="text-xs text-red-600 hover:underline font-medium"
+          >
+            Clear Slot
+          </button>
+          <div className="flex gap-2">
+            <button onClick={onClose} className="px-4 py-2 text-slate-600 font-medium text-sm hover:bg-slate-200 rounded-lg">
+              Cancel
+            </button>
+            <button onClick={handleSave} className="px-5 py-2 bg-blue-600 text-white font-medium text-sm rounded-lg hover:bg-blue-700 shadow-xs">
+              Apply
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -838,65 +949,98 @@ const ClassSelectorModal = ({ value, definedClasses, onClose, onSave }) => {
 const TimetableEditor = ({ teacher, onUpdateTimetable, onClose, definedClasses }) => {
   const [schedule, setSchedule] = useState(teacher.timetable || {});
   const [isSaving, setIsSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
   const [editingCell, setEditingCell] = useState(null);
 
   useEffect(() => {
-    const initialSchedule = teacher.timetable || {};
+    const initialSchedule = {};
     DAYS.forEach(day => {
-      if (!initialSchedule[day]) initialSchedule[day] = Array(7).fill('');
+      initialSchedule[day] = teacher.timetable?.[day] ? [...teacher.timetable[day]] : Array(7).fill('');
     });
     setSchedule(initialSchedule);
+    setHasChanges(false);
   }, [teacher]);
 
   const handleCellUpdate = (day, periodIndex, newValue) => {
     const newSchedule = { ...schedule };
-    if (!newSchedule[day]) newSchedule[day] = Array(7).fill('');
+    newSchedule[day] = [...(newSchedule[day] || Array(7).fill(''))];
     newSchedule[day][periodIndex] = newValue;
     setSchedule(newSchedule);
+    setHasChanges(true);
     setEditingCell(null);
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     await onUpdateTimetable(teacher.id, schedule);
+    setHasChanges(false);
     setIsSaving(false);
   };
 
+  const totalWeeklyPeriods = getWeeklyPeriodsCount(schedule);
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 h-full flex flex-col relative overflow-hidden print:hidden">
-      <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl shrink-0">
-        <div>
-          <h2 className="text-lg font-bold text-slate-800">Master Timetable</h2>
-          <p className="text-sm text-slate-500">Editing: <span className="font-medium text-blue-600">{teacher.name}</span></p>
+      <div className="p-4 border-b border-slate-100 flex flex-wrap justify-between items-center gap-2 bg-slate-50/70 rounded-t-xl shrink-0">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={onClose}
+            className="lg:hidden p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+            title="Back to Staff List"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-slate-800">{teacher.name}&apos;s Timetable</h2>
+              <span className="text-xs bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">
+                {totalWeeklyPeriods} / 35 Periods
+              </span>
+            </div>
+            <p className="text-xs text-slate-500">Click any period slot below to assign or modify classes</p>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium">
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={onClose} 
+            className="hidden lg:inline-block px-3.5 py-2 text-slate-600 hover:bg-slate-200/70 rounded-lg text-sm font-medium transition-colors"
+          >
             Close
           </button>
           <button 
             onClick={handleSave} 
-            disabled={isSaving}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm"
+            disabled={isSaving || !hasChanges}
+            className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-xs transition-all ${
+              hasChanges 
+                ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                : 'bg-slate-200 text-slate-500 cursor-not-allowed'
+            }`}
           >
-            {isSaving ? 'Saving...' : <><Save className="w-4 h-4" /> Save Changes</>}
+            {isSaving ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+            ) : (
+              <><Save className="w-4 h-4" /> {hasChanges ? 'Save Changes' : 'Saved'}</>
+            )}
           </button>
         </div>
       </div>
 
       <div className="flex-1 overflow-auto p-4 min-h-0">
-        <div className="min-w-[800px]">
-          <div className="grid grid-cols-[100px_repeat(7,1fr)] gap-1 mb-2">
-            <div className="font-bold text-slate-400 text-xs uppercase tracking-wider text-center self-end pb-2">Day</div>
+        <div className="min-w-[700px]">
+          <div className="grid grid-cols-[100px_repeat(7,1fr)] gap-1.5 mb-2">
+            <div className="font-bold text-slate-400 text-xs uppercase tracking-wider text-center self-center py-2">
+              Day / Pd
+            </div>
             {PERIODS.map(p => (
-              <div key={p} className="text-center font-bold text-slate-600 bg-slate-100 py-2 rounded-md text-sm">
-                Pd {p}
+              <div key={p} className="text-center font-bold text-slate-700 bg-slate-100 py-2 rounded-lg text-xs uppercase tracking-wider">
+                Period {p}
               </div>
             ))}
           </div>
 
           {DAYS.map(day => (
-            <div key={day} className="grid grid-cols-[100px_repeat(7,1fr)] gap-1 mb-2 items-stretch">
-              <div className="font-bold text-slate-700 text-sm flex items-center justify-center bg-slate-50 rounded-md border border-slate-100">
+            <div key={day} className="grid grid-cols-[100px_repeat(7,1fr)] gap-1.5 mb-2 items-stretch">
+              <div className="font-bold text-slate-700 text-xs flex items-center justify-center bg-slate-50 rounded-lg border border-slate-200/80">
                 {day.substring(0, 3)}
               </div>
               {PERIODS.map((p, idx) => {
@@ -906,17 +1050,17 @@ const TimetableEditor = ({ teacher, onUpdateTimetable, onClose, definedClasses }
                     key={`${day}-${p}`} 
                     onClick={() => setEditingCell({ day, idx, value: cellValue })}
                     className={`
-                      relative w-full h-16 p-1 text-xs text-center border rounded-md cursor-pointer transition-all flex items-center justify-center group
+                      relative w-full h-16 p-1.5 text-xs text-center border rounded-xl cursor-pointer transition-all flex items-center justify-center group
                       ${cellValue
-                        ? 'bg-blue-50 border-blue-200 text-blue-800 font-bold hover:bg-blue-100' 
-                        : 'bg-white border-slate-200 text-slate-300 hover:border-blue-300 hover:bg-slate-50'
+                        ? 'bg-blue-50/90 border-blue-200 text-blue-900 font-bold hover:bg-blue-100 hover:border-blue-300 shadow-2xs' 
+                        : 'bg-white border-slate-200/80 text-slate-300 hover:border-blue-300 hover:bg-slate-50'
                       }
                     `}
                   >
-                    <span className="line-clamp-3 leading-tight px-1">
-                       {cellValue || '-'}
+                    <span className="line-clamp-2 leading-tight px-1">
+                      {cellValue || 'Free'}
                     </span>
-                    <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-blue-400">
+                    <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 text-blue-500 transition-opacity">
                       <Edit2 className="w-3 h-3" />
                     </div>
                   </div>
@@ -948,9 +1092,11 @@ const SubstitutionGenerator = ({
   setSelectedDay,
   absentIds,
   toggleAbsent,
+  clearAbsent,
   assignments,
   setAssignments 
 }) => {
+  const [staffSearch, setStaffSearch] = useState('');
 
   const validClassCodes = useMemo(() => {
     const codes = new Set();
@@ -967,30 +1113,36 @@ const SubstitutionGenerator = ({
     const upperEntry = entry.toUpperCase();
     const found = [];
     for (const code of validClassCodes) {
-       if (upperEntry.includes(code)) {
-         found.push(code);
-       }
+      const regex = new RegExp(`\\b${code}\\b`, 'i');
+      if (regex.test(upperEntry)) {
+        found.push(code);
+      }
     }
     return found;
   };
 
   const teacherTeachesAny = (teacher, targetCodes) => {
-    if (!teacher.timetable) return false;
-    if (!targetCodes || targetCodes.length === 0) return false;
+    if (!teacher.timetable || !targetCodes || targetCodes.length === 0) return false;
 
     for (const day of DAYS) {
       const dailySchedule = teacher.timetable[day];
       if (dailySchedule) {
         for (const cell of dailySchedule) {
-           if (!cell) continue;
-           const cellCodes = extractClassCodes(cell);
-           if (cellCodes.some(c => targetCodes.includes(c))) {
-             return true;
-           }
+          if (!cell) continue;
+          const cellCodes = extractClassCodes(cell);
+          if (cellCodes.some(c => targetCodes.includes(c))) {
+            return true;
+          }
         }
       }
     }
     return false;
+  };
+
+  // Count how many classes a teacher already has on selectedDay
+  const getTeacherDailyLoad = (teacher) => {
+    const sched = teacher.timetable?.[selectedDay] || [];
+    return sched.filter(s => s && s.trim() !== '').length;
   };
 
   const substitutionData = useMemo(() => {
@@ -1003,45 +1155,48 @@ const SubstitutionGenerator = ({
 
       absentTeacher.timetable[selectedDay].forEach((subject, periodIndex) => {
         if (periodIndex < 7 && subject && subject.trim() !== '') {
-          
           const targetCodes = extractClassCodes(subject);
           const strictMatches = [];
           const generalMatches = [];
 
           teachers.forEach(t => {
-             if (t.id === absentId || absentIds.includes(t.id)) return;
-             const tSchedule = t.timetable?.[selectedDay];
-             const tActivity = tSchedule?.[periodIndex];
-             const isFree = !tActivity || tActivity.trim() === '';
-             
-             if (isFree) {
-                if (targetCodes.length > 0 && teacherTeachesAny(t, targetCodes)) {
-                   strictMatches.push({ ...t, type: 'strict' });
-                } else {
-                   generalMatches.push({ ...t, type: 'general' });
-                }
-             }
+            if (t.id === absentId || absentIds.includes(t.id)) return;
+            const tSchedule = t.timetable?.[selectedDay];
+            const tActivity = tSchedule?.[periodIndex];
+            const isFree = !tActivity || tActivity.trim() === '';
+            
+            if (isFree) {
+              const dailyLoad = getTeacherDailyLoad(t);
+              const freePeriodsToday = 7 - dailyLoad;
+              const teacherObj = { ...t, dailyLoad, freePeriodsToday };
+              if (targetCodes.length > 0 && teacherTeachesAny(t, targetCodes)) {
+                strictMatches.push({ ...teacherObj, type: 'strict' });
+              } else {
+                generalMatches.push({ ...teacherObj, type: 'general' });
+              }
+            }
           });
 
-          const replacements = [...strictMatches, ...generalMatches];
+          // Sort by most free periods today first, then alphabetically
+          strictMatches.sort((a, b) => b.freePeriodsToday - a.freePeriodsToday || a.name.localeCompare(b.name));
+          generalMatches.sort((a, b) => b.freePeriodsToday - a.freePeriodsToday || a.name.localeCompare(b.name));
 
           results.push({
             id: `${absentId}-${periodIndex}`, 
             period: periodIndex + 1,
             classInfo: subject,
-            targetCodes: targetCodes,
+            targetCodes,
             absentTeacherName: absentTeacher.name,
             absentTeacherId: absentId,
-            replacements: replacements
+            replacements: [...strictMatches, ...generalMatches]
           });
         }
       });
     });
 
-    // Sort by Period (1-7) first, then by Absent Teacher Name
     return results.sort((a, b) => {
       if (a.period === b.period) {
-         return a.absentTeacherName.localeCompare(b.absentTeacherName);
+        return a.absentTeacherName.localeCompare(b.absentTeacherName);
       }
       return a.period - b.period;
     });
@@ -1051,46 +1206,104 @@ const SubstitutionGenerator = ({
     for (const [slotId, assignedTeacherId] of Object.entries(assignments)) {
       const assignedItem = substitutionData.find(item => item.id === slotId);
       if (assignedItem && assignedItem.period === period) {
-         if (slotId !== currentSlotId && assignedTeacherId === teacherId) {
-           return true;
-         }
+        if (slotId !== currentSlotId && assignedTeacherId === teacherId) {
+          return true;
+        }
       }
     }
     return false;
   };
 
-  const sortedTeachers = [...teachers].sort((a, b) => a.name.localeCompare(b.name));
+  // Smart Auto-Assign Substitutes
+  const handleAutoAssign = () => {
+    const nextAssignments = { ...assignments };
+    const subCountTracker = {};
+
+    // Count existing manual assignments
+    Object.values(nextAssignments).forEach(tid => {
+      if (tid) subCountTracker[tid] = (subCountTracker[tid] || 0) + 1;
+    });
+
+    substitutionData.forEach(item => {
+      if (nextAssignments[item.id]) return; // Keep existing selection
+
+      const available = item.replacements.filter(cand => {
+        // Check period conflict in nextAssignments
+        for (const [slotId, assignedTid] of Object.entries(nextAssignments)) {
+          const otherItem = substitutionData.find(d => d.id === slotId);
+          if (otherItem && otherItem.period === item.period && assignedTid === cand.id) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      if (available.length > 0) {
+        // Sort: prefer strict matches, then fewer assigned subs today, then more free periods
+        available.sort((a, b) => {
+          if (a.type !== b.type) return a.type === 'strict' ? -1 : 1;
+          const subsA = subCountTracker[a.id] || 0;
+          const subsB = subCountTracker[b.id] || 0;
+          if (subsA !== subsB) return subsA - subsB;
+          return b.freePeriodsToday - a.freePeriodsToday;
+        });
+
+        const chosen = available[0];
+        nextAssignments[item.id] = chosen.id;
+        subCountTracker[chosen.id] = (subCountTracker[chosen.id] || 0) + 1;
+      }
+    });
+
+    setAssignments(nextAssignments);
+  };
+
+  const filteredTeachers = useMemo(() => {
+    return [...teachers]
+      .filter(t => t.name.toLowerCase().includes(staffSearch.toLowerCase()))
+      .sort((a, b) => {
+        const aAbsent = absentIds.includes(a.id);
+        const bAbsent = absentIds.includes(b.id);
+        if (aAbsent !== bAbsent) return aAbsent ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+  }, [teachers, staffSearch, absentIds]);
 
   const handlePrint = () => {
     const originalTitle = document.title;
     const dateStr = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
-    document.title = `${dateStr}_Substitution`;
+    document.title = `${dateStr}_Substitution_${selectedDay}`;
     window.print();
     document.title = originalTitle;
   };
+
+  const assignedCount = substitutionData.filter(item => assignments[item.id]).length;
 
   // Print Layout
   if (PrintMode) {
     return (
       <div className="print-only hidden bg-white text-black p-4">
-        <div className="text-center mb-6">
-          <h1 className="text-xl font-bold mb-1 uppercase">{selectedDay} - {new Date().toLocaleDateString('en-GB')}</h1>
+        <div className="text-center mb-4">
+          <h1 className="text-2xl font-bold uppercase tracking-wide">GHSS POOKKOTTUR — SUBSTITUTION CHART</h1>
+          <h2 className="text-base font-bold mt-1 uppercase">
+            {selectedDay} — {new Date().toLocaleDateString('en-GB')}
+          </h2>
         </div>
         
         <table className="w-full border-collapse border border-black text-sm">
           <thead>
             <tr>
-              <th className="border border-black p-2 w-24 bg-white text-center">Period</th>
-              <th className="border border-black p-2 w-24 bg-white text-center"></th>
+              <th colSpan={2} className="border border-black p-2 w-28 bg-gray-100 text-center font-bold">
+                Absent Staff
+              </th>
               {PERIODS.map(p => (
-                <th key={p} className="border border-black p-2 bg-white font-bold text-center">
-                  {p}
+                <th key={p} className="border border-black p-2 bg-gray-100 font-bold text-center">
+                  Period {p}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {absentIds.sort((a, b) => {
+            {[...absentIds].sort((a, b) => {
               const nameA = teachers.find(t => t.id === a)?.name || "";
               const nameB = teachers.find(t => t.id === b)?.name || "";
               return nameA.localeCompare(nameB);
@@ -1100,7 +1313,7 @@ const SubstitutionGenerator = ({
               
               return (
                 <tr key={absentId}>
-                  <td colSpan={2} className="border border-black p-2 font-bold bg-white text-center align-middle text-red-600 text-lg">
+                  <td colSpan={2} className="border border-black p-2 font-bold bg-white text-center align-middle text-red-700 text-base">
                     {teacher.name}
                   </td>
                   {PERIODS.map((p, index) => {
@@ -1112,38 +1325,37 @@ const SubstitutionGenerator = ({
                     let subType = "";
                     
                     if (item) {
-                       content = item.classInfo;
-                       const assignedId = assignments[slotId];
-                       const replacementInfo = item.replacements.find(r => r.id === assignedId);
-                       if (replacementInfo) {
-                         subName = replacementInfo.name;
-                         subType = replacementInfo.type;
-                       } else if (assignedId) {
-                         const t = teachers.find(tr => tr.id === assignedId);
-                         subName = t?.name || "";
-                       }
+                      content = item.classInfo;
+                      const assignedId = assignments[slotId];
+                      const replacementInfo = item.replacements.find(r => r.id === assignedId);
+                      if (replacementInfo) {
+                        subName = replacementInfo.name;
+                        subType = replacementInfo.type;
+                      } else if (assignedId) {
+                        const t = teachers.find(tr => tr.id === assignedId);
+                        subName = t?.name || "";
+                      }
                     }
                     
-                    // Color Scheme
                     let colorClass = "text-black";
                     if (subType === 'strict') colorClass = "text-green-700";
-                    else if (subType === 'general') colorClass = "text-amber-600";
+                    else if (subType === 'general') colorClass = "text-amber-700";
 
                     return (
-                      <td key={p} className="border border-black p-1 h-16 text-center align-middle">
+                      <td key={p} className="border border-black p-1.5 h-16 text-center align-middle">
                         {item ? (
-                          <div className="flex flex-col justify-between h-full py-1">
-                            <span className="text-sm font-medium">{content}</span>
+                          <div className="flex flex-col justify-between h-full py-0.5">
+                            <span className="text-xs font-semibold text-gray-700">{content}</span>
                             {subName ? (
                               <span className={`font-bold text-base ${colorClass}`}>
                                 {subName}
                               </span>
                             ) : (
-                              <span className="text-xs text-red-300 italic">Required</span>
+                              <span className="text-xs text-red-400 italic">Unassigned</span>
                             )}
                           </div>
                         ) : (
-                          <span className="text-gray-400">---</span>
+                          <span className="text-gray-300">---</span>
                         )}
                       </td>
                     );
@@ -1160,7 +1372,6 @@ const SubstitutionGenerator = ({
   // Screen Layout
   return (
     <div className="flex flex-col h-full w-full">
-      {/* Style Injection for Print */}
       <style>{`
         @media print {
           @page { margin: 10mm; size: landscape; }
@@ -1172,13 +1383,7 @@ const SubstitutionGenerator = ({
             margin: 0 !important;
             padding: 0 !important;
           }
-          
-          /* CRITICAL: Completely remove the screen UI from flow */
-          .screen-only {
-            display: none !important;
-          }
-
-          /* Show only print section */
+          .screen-only { display: none !important; }
           .print-only {
             display: block !important;
             position: absolute;
@@ -1186,8 +1391,6 @@ const SubstitutionGenerator = ({
             left: 0;
             width: 100%;
           }
-
-          /* Grid Table Styles */
           table { width: 100%; border-collapse: collapse; border: 2px solid black; }
           th, td { border: 1px solid black; padding: 8px; text-align: center; vertical-align: top; height: 60px; }
           th { background-color: #f3f4f6; font-weight: bold; }
@@ -1196,135 +1399,273 @@ const SubstitutionGenerator = ({
         }
       `}</style>
 
-      <div className="screen-only flex-1 flex flex-col h-full overflow-hidden bg-slate-100 text-slate-800 font-sans">
-        <div className="p-5 bg-slate-800 text-white shrink-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <Clock className="w-6 h-6 text-blue-400" />
-              Substitution Generator
-            </h2>
-            <p className="text-slate-400 text-sm mt-1">Select substitutes for each class.</p>
+      <div className="screen-only flex-1 flex flex-col h-full overflow-hidden bg-white rounded-xl shadow-sm border border-slate-200">
+        {/* Top Action Bar */}
+        <div className="p-4 bg-slate-800 text-white shrink-0 flex flex-wrap justify-between items-center gap-3 rounded-t-xl">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-600/20 border border-blue-400/30 rounded-lg text-blue-400">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold">Substitution Generator</h2>
+              <p className="text-slate-400 text-xs">Mark absent teachers and assign free staff</p>
+            </div>
           </div>
-          <button 
-            onClick={handlePrint}
-            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-sm shadow-sm transition-all"
-          >
-            <Printer className="w-4 h-4" /> Download / Print PDF
-          </button>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {substitutionData.length > 0 && (
+              <>
+                <button 
+                  onClick={handleAutoAssign}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg font-medium flex items-center gap-1.5 text-xs shadow-xs transition-all"
+                  title="Automatically assign best available substitutes"
+                >
+                  <Sparkles className="w-4 h-4" /> Auto-Assign
+                </button>
+                <button 
+                  onClick={() => setAssignments({})}
+                  className="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-lg font-medium flex items-center gap-1.5 text-xs transition-all"
+                  title="Reset selected substitutes"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> Reset Subs
+                </button>
+              </>
+            )}
+            <button 
+              onClick={handlePrint}
+              disabled={absentIds.length === 0}
+              className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-xs shadow-xs transition-all ${
+                absentIds.length === 0 
+                  ? 'bg-slate-700 text-slate-500 cursor-not-allowed' 
+                  : 'bg-blue-600 hover:bg-blue-500 text-white'
+              }`}
+            >
+              <Printer className="w-4 h-4" /> Print / Save PDF
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 h-full overflow-hidden min-h-0">
-          <div className="col-span-1 lg:col-span-4 bg-slate-50 border-b lg:border-b-0 lg:border-r border-slate-200 p-4 overflow-y-auto h-full min-h-0">
-            <div className="mb-6">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Day</label>
-              <select 
-                value={selectedDay} 
-                onChange={(e) => setSelectedDay(e.target.value)}
-                className="w-full p-2 border border-slate-300 rounded-lg bg-white font-medium text-slate-700"
-              >
-                {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Mark Absent Staff</label>
-              <div className="space-y-2">
-                {sortedTeachers.map(t => (
-                  <label key={t.id} className={`
-                    flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all
-                    ${absentIds.includes(t.id) 
-                      ? 'bg-red-50 border-red-200 shadow-sm' 
-                      : 'bg-white border-slate-200 hover:border-blue-300'
-                    }
-                  `}>
-                    <div className={`
-                      w-5 h-5 rounded border flex items-center justify-center shrink-0
-                      ${absentIds.includes(t.id) ? 'bg-red-500 border-red-500' : 'border-slate-300 bg-white'}
-                    `}>
-                      {absentIds.includes(t.id) && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-                    </div>
-                    <input 
-                      type="checkbox" 
-                      className="hidden"
-                      checked={absentIds.includes(t.id)}
-                      onChange={() => toggleAbsent(t.id)}
-                    />
-                    <span className={`font-medium text-sm ${absentIds.includes(t.id) ? 'text-red-700' : 'text-slate-700'}`}>
-                      {t.name}
-                    </span>
-                  </label>
+        <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden min-h-0">
+          {/* Left Sidebar: Day & Absent Teacher Picker */}
+          <div className="col-span-1 lg:col-span-4 bg-slate-50 border-b lg:border-b-0 lg:border-r border-slate-200 p-4 flex flex-col overflow-hidden h-full min-h-0">
+            <div className="mb-4 shrink-0">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                1. Select Day
+              </label>
+              <div className="grid grid-cols-5 gap-1 bg-slate-200/70 p-1 rounded-lg">
+                {DAYS.map(d => (
+                  <button
+                    key={d}
+                    onClick={() => setSelectedDay(d)}
+                    className={`py-1.5 rounded-md text-xs font-bold transition-all ${
+                      selectedDay === d 
+                        ? 'bg-white text-blue-600 shadow-xs' 
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    {d.substring(0, 3)}
+                  </button>
                 ))}
               </div>
             </div>
+
+            <div className="flex items-center justify-between mb-2 shrink-0">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                2. Absent Staff ({absentIds.length})
+              </label>
+              {absentIds.length > 0 && (
+                <button 
+                  onClick={clearAbsent}
+                  className="text-xs text-red-600 hover:underline font-medium"
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
+
+            <div className="relative mb-2.5 shrink-0">
+              <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Filter staff by code..."
+                value={staffSearch}
+                onChange={(e) => setStaffSearch(e.target.value)}
+                className="w-full pl-9 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-400"
+              />
+              {staffSearch && (
+                <button 
+                  onClick={() => setStaffSearch('')}
+                  className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            <div className="overflow-y-auto flex-1 space-y-1.5 pr-1 min-h-0">
+              {filteredTeachers.map(t => {
+                const isAbsent = absentIds.includes(t.id);
+                const todayClassesCount = getTeacherDailyLoad(t);
+                return (
+                  <label 
+                    key={t.id} 
+                    className={`
+                      flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all
+                      ${isAbsent 
+                        ? 'bg-red-50 border-red-200 shadow-2xs' 
+                        : 'bg-white border-slate-200/80 hover:border-blue-300'
+                      }
+                    `}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`
+                        w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors
+                        ${isAbsent ? 'bg-red-600 border-red-600' : 'border-slate-300 bg-white'}
+                      `}>
+                        {isAbsent && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                      </div>
+                      <input 
+                        type="checkbox" 
+                        className="hidden"
+                        checked={isAbsent}
+                        onChange={() => toggleAbsent(t.id)}
+                      />
+                      <span className={`font-bold text-sm ${isAbsent ? 'text-red-800' : 'text-slate-700'}`}>
+                        {t.name}
+                      </span>
+                    </div>
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
+                      isAbsent ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {todayClassesCount} pds today
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="col-span-1 lg:col-span-8 p-6 overflow-y-auto h-full min-h-0 bg-white">
+          {/* Right Panel: Substitution Slots */}
+          <div className="col-span-1 lg:col-span-8 p-4 md:p-6 overflow-y-auto h-full min-h-0 bg-white">
             {absentIds.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                <CheckCircle2 className="w-16 h-16 mb-4 text-slate-200" />
-                <p className="text-lg font-medium">No teachers marked absent.</p>
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 py-12">
+                <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-3 border border-slate-100">
+                  <UserCheck className="w-8 h-8 text-slate-300" />
+                </div>
+                <p className="text-base font-bold text-slate-600">No Teachers Marked Absent</p>
+                <p className="text-xs text-slate-400 mt-1">Select absent teachers from the left panel to generate substitutions.</p>
               </div>
             ) : substitutionData.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-green-600">
-                <CheckCircle2 className="w-16 h-16 mb-4" />
-                <p className="text-lg font-bold">No Substitutions Needed</p>
-                <p className="text-slate-500 text-sm">Absent teachers have no classes today.</p>
+              <div className="h-full flex flex-col items-center justify-center text-emerald-600 py-12">
+                <CheckCircle2 className="w-14 h-14 mb-3" />
+                <p className="text-base font-bold">No Substitutions Needed</p>
+                <p className="text-slate-500 text-xs mt-1">The selected absent staff have no scheduled classes on {selectedDay}.</p>
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex justify-between items-end border-b pb-4 mb-4">
+                {/* Summary Banner */}
+                <div className="flex flex-wrap justify-between items-center gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                   <div>
-                    <h3 className="text-2xl font-bold text-slate-800">Substitution Plan</h3>
-                    <p className="text-slate-500 text-sm mt-1">For <span className="font-medium text-blue-600">{selectedDay}</span></p>
+                    <h3 className="text-base font-bold text-slate-800">{selectedDay} Substitution Plan</h3>
+                    <p className="text-xs text-slate-500">
+                      Green options indicate teachers who already teach the target class
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs font-bold">
+                    <span className="px-2.5 py-1 rounded-md bg-slate-200 text-slate-700">
+                      Total: {substitutionData.length}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800">
+                      Assigned: {assignedCount}
+                    </span>
+                    {substitutionData.length - assignedCount > 0 && (
+                      <span className="px-2.5 py-1 rounded-md bg-amber-100 text-amber-800">
+                        Pending: {substitutionData.length - assignedCount}
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {substitutionData.map((item, idx) => {
-                  const assignedTeacherId = assignments[item.id] || "";
-                  return (
-                    <div key={idx} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                      <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
-                         <div className="flex items-center gap-3">
-                           <span className="bg-slate-800 text-white text-xs font-bold px-2 py-1 rounded">PERIOD {item.period}</span>
-                           <span className="font-bold text-slate-700 text-lg">{item.classInfo}</span>
-                         </div>
-                         <span className="text-xs font-medium text-red-500 bg-red-50 px-2 py-1 rounded-full border border-red-100">
-                           Absent: {item.absentTeacherName}
-                         </span>
+                {/* Slot Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {substitutionData.map((item) => {
+                    const assignedTeacherId = assignments[item.id] || "";
+                    const assignedRep = item.replacements.find(r => r.id === assignedTeacherId);
+
+                    return (
+                      <div 
+                        key={item.id} 
+                        className={`rounded-xl border transition-all overflow-hidden ${
+                          assignedTeacherId 
+                            ? 'border-emerald-200 bg-emerald-50/20 shadow-2xs' 
+                            : 'border-slate-200 bg-white shadow-2xs'
+                        }`}
+                      >
+                        <div className="bg-slate-50/80 px-3.5 py-2.5 border-b border-slate-100 flex justify-between items-center gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="bg-slate-800 text-white text-[11px] font-bold px-2 py-0.5 rounded-md">
+                              PD {item.period}
+                            </span>
+                            <span className="font-bold text-slate-800 text-sm">
+                              Class {item.classInfo}
+                            </span>
+                          </div>
+                          <span className="text-[11px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full border border-red-100">
+                            Absent: {item.absentTeacherName}
+                          </span>
+                        </div>
+
+                        <div className="p-3.5">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                              Substitute Teacher
+                            </label>
+                            {assignedRep && (
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                assignedRep.type === 'strict' 
+                                  ? 'bg-emerald-100 text-emerald-700' 
+                                  : 'bg-amber-100 text-amber-700'
+                              }`}>
+                                {assignedRep.type === 'strict' ? 'Class Teacher Match' : 'General Free Staff'}
+                              </span>
+                            )}
+                          </div>
+                          <select 
+                            className={`w-full p-2 border rounded-lg text-sm font-medium outline-none transition-all ${
+                              assignedTeacherId 
+                                ? 'border-emerald-300 bg-white text-slate-800 font-bold' 
+                                : 'border-slate-300 bg-white text-slate-700 focus:ring-2 focus:ring-blue-500'
+                            }`}
+                            value={assignedTeacherId}
+                            onChange={(e) => setAssignments(prev => ({ ...prev, [item.id]: e.target.value }))}
+                          >
+                            <option value="">-- Select Substitute --</option>
+                            <optgroup label="★ Teaches This Class (Preferred)">
+                              {item.replacements.filter(r => r.type === 'strict').map(r => {
+                                const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
+                                return (
+                                  <option key={r.id} value={r.id} disabled={isBooked}>
+                                    {r.name} ({r.freePeriodsToday} free today) {isBooked ? '— [Busy]' : ''}
+                                  </option>
+                                );
+                              })}
+                            </optgroup>
+                            <optgroup label="Other Free Teachers">
+                              {item.replacements.filter(r => r.type === 'general').map(r => {
+                                const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
+                                return (
+                                  <option key={r.id} value={r.id} disabled={isBooked}>
+                                    {r.name} ({r.freePeriodsToday} free today) {isBooked ? '— [Busy]' : ''}
+                                  </option>
+                                );
+                              })}
+                            </optgroup>
+                          </select>
+                        </div>
                       </div>
-                      <div className="p-4 bg-white">
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Assign Substitute</label>
-                        <select 
-                          className="w-full p-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none"
-                          value={assignedTeacherId}
-                          onChange={(e) => setAssignments(prev => ({ ...prev, [item.id]: e.target.value }))}
-                        >
-                          <option value="">-- Select Teacher --</option>
-                          <optgroup label="Subject Teachers (Preferred)">
-                            {item.replacements.filter(r => r.type === 'strict').map(r => {
-                              const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
-                              return (
-                                <option key={r.id} value={r.id} disabled={isBooked} className={isBooked ? "text-slate-300" : "text-green-700 font-bold"}>
-                                  {r.name} {isBooked ? "(Busy)" : ""}
-                                </option>
-                              );
-                            })}
-                          </optgroup>
-                          <optgroup label="Other Available Teachers">
-                            {item.replacements.filter(r => r.type === 'general').map(r => {
-                              const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
-                              return (
-                                <option key={r.id} value={r.id} disabled={isBooked} className={isBooked ? "text-slate-300" : "text-slate-700"}>
-                                  {r.name} {isBooked ? "(Busy)" : ""}
-                                </option>
-                              );
-                            })}
-                          </optgroup>
-                        </select>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -1342,22 +1683,56 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
   const [authError, setAuthError] = useState(null);
-  const [activeTab, setActiveTab] = useState('manage'); 
-  const [selectedTeacher, setSelectedTeacher] = useState(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Mobile Menu State
+  const [activeTab, setActiveTab] = useState('substitute'); 
+  const [selectedTeacherId, setSelectedTeacherId] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Hoisted state for substitution logic
-  const [selectedDay, setSelectedDay] = useState('Monday');
+  const [selectedDay, setSelectedDay] = useState(() => {
+    const todayIdx = new Date().getDay(); // 0=Sun, 1=Mon...
+    return DAYS[todayIdx - 1] || 'Monday';
+  });
   const [absentIds, setAbsentIds] = useState([]);
   const [assignments, setAssignments] = useState({});
 
-  // Helper to pass down
+  // Set Clock Favicon and Page Title dynamically
+  useEffect(() => {
+    document.title = "GHSS Pookkottur — SchoolScheduler";
+    const clockSvg = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%231e293b%22 stroke=%22%2338bdf8%22 stroke-width=%222.2%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22/><polyline points=%2212 6 12 12 16 14%22/></svg>`;
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.type = 'image/svg+xml';
+    link.href = clockSvg;
+  }, []);
+
   const toggleAbsent = (id) => {
-    setAbsentIds(prev => prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]);
-    // Clear assignments for this teacher to avoid stale state
-    // Ideally, filter out assignments keys that start with `id-`
-    // For simplicity, keeping current assignment logic is fine, or reset:
-    // setAssignments({}); 
+    setAbsentIds(prev => {
+      const exists = prev.includes(id);
+      if (exists) {
+        // Also clean up any assignments belonging to this teacher
+        setAssignments(curr => {
+          const next = { ...curr };
+          Object.keys(next).forEach(key => {
+            if (key.startsWith(`${id}-`) || next[key] === id) {
+              delete next[key];
+            }
+          });
+          return next;
+        });
+        return prev.filter(pid => pid !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+
+  const clearAbsent = () => {
+    setAbsentIds([]);
+    setAssignments({});
   };
 
   // Auth & Initial Data Load
@@ -1398,21 +1773,19 @@ export default function App() {
         const snapshot = await getDocs(q);
         
         if (snapshot.empty) {
-          console.log("Seeding database...");
           const batch = writeBatch(db);
 
           INITIAL_CLASSES.forEach(cls => {
-             const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'classes'));
-             batch.set(ref, { ...cls, createdAt: serverTimestamp() });
+            const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'classes'));
+            batch.set(ref, { ...cls, createdAt: serverTimestamp() });
           });
 
           INITIAL_TEACHERS.forEach(t => {
-             const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'teachers'));
-             batch.set(ref, { ...t, createdAt: serverTimestamp() });
+            const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'teachers'));
+            batch.set(ref, { ...t, createdAt: serverTimestamp() });
           });
 
           await batch.commit();
-          console.log("Database seeded successfully");
         }
       } catch (e) {
         console.error("Auto-seed error", e);
@@ -1420,7 +1793,7 @@ export default function App() {
     };
 
     if (user && !loading) {
-       seedDatabase();
+      seedDatabase();
     }
   }, [user, loading]);
 
@@ -1432,7 +1805,7 @@ export default function App() {
     const unsubTeachers = onSnapshot(qTeachers, (snapshot) => {
       const loadedTeachers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setTeachers(loadedTeachers);
-      if(classes.length > 0 || snapshot.empty) setLoading(false); 
+      if (classes.length > 0 || snapshot.empty) setLoading(false); 
     });
 
     const qClasses = query(collection(db, 'artifacts', appId, 'public', 'data', 'classes'));
@@ -1448,14 +1821,19 @@ export default function App() {
     };
   }, [user]);
 
+  const selectedTeacher = useMemo(() => {
+    return teachers.find(t => t.id === selectedTeacherId) || null;
+  }, [teachers, selectedTeacherId]);
+
   // --- ACTIONS (Add, Update, Delete) ---
   const addTeacher = async (name) => {
     if (!user) return;
-    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'teachers'), {
+    const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'teachers'), {
       name,
       timetable: {},
       createdAt: serverTimestamp()
     });
+    setSelectedTeacherId(docRef.id);
   };
 
   const updateTimetable = async (teacherId, newTimetable) => {
@@ -1465,14 +1843,14 @@ export default function App() {
 
   const deleteTeacher = async (teacherId) => {
     if (!user) return;
-    if (!confirm('Delete teacher?')) return;
+    if (!confirm('Delete this teacher from the directory?')) return;
     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'teachers', teacherId));
-    if (selectedTeacher?.id === teacherId) setSelectedTeacher(null);
+    if (selectedTeacherId === teacherId) setSelectedTeacherId(null);
   };
 
   const addClass = async (name) => {
     if (!user) return;
-    if(classes.some(c => c.name === name)) return alert("Class exists");
+    if (classes.some(c => c.name === name)) return alert("Class already exists");
     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'classes'), {
       name,
       divisions: [],
@@ -1491,59 +1869,52 @@ export default function App() {
     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'classes', classId));
   };
 
-  // FORCE RELOAD Action
+  // FORCE RELOAD Action (Cleanly replaces old Firestore records with the new GHSS Pookkottur dataset)
   const handleForceReloadDefaults = async () => {
     if (!user) {
       alert("Please wait for authentication to finish.");
       return;
     }
-    if (!confirm("Force reload default teachers? This will overwrite their schedules. Continue?")) return;
+    if (!confirm("Reset database to the new GHSS Pookkottur default timetable (42 teachers & classes 8-10)? This will replace outdated teachers and classes.")) return;
     
     setImporting(true);
     try {
       const batch = writeBatch(db);
-      let operationCount = 0;
 
-      const existingClassNames = classes.map(c => c.name);
+      // Delete existing classes and teachers so old records (e.g. classes 5-7) are removed cleanly
+      const existingClassesSnap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'classes')));
+      existingClassesSnap.forEach(d => batch.delete(d.ref));
+
+      const existingTeachersSnap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'teachers')));
+      existingTeachersSnap.forEach(d => batch.delete(d.ref));
+
+      // Insert fresh INITIAL_CLASSES
       for (const cls of INITIAL_CLASSES) {
-        if (!existingClassNames.includes(cls.name)) {
-          const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'classes'));
-          batch.set(ref, { name: cls.name, divisions: cls.divisions, createdAt: serverTimestamp() });
-          operationCount++;
-        }
+        const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'classes'));
+        batch.set(ref, { name: cls.name, divisions: cls.divisions, createdAt: serverTimestamp() });
       }
 
-      const teacherMap = new Map(teachers.map(t => [t.name, t.id]));
+      // Insert fresh INITIAL_TEACHERS
       for (const t of INITIAL_TEACHERS) {
-        if (teacherMap.has(t.name)) {
-          const existingId = teacherMap.get(t.name);
-          const ref = doc(db, 'artifacts', appId, 'public', 'data', 'teachers', existingId);
-          batch.update(ref, { timetable: t.timetable });
-          operationCount++;
-        } else {
-           const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'teachers'));
-           batch.set(ref, { name: t.name, timetable: t.timetable, createdAt: serverTimestamp() });
-           operationCount++;
-        }
+        const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'teachers'));
+        batch.set(ref, { name: t.name, timetable: t.timetable, createdAt: serverTimestamp() });
       }
 
-      if (operationCount > 0) {
-        await batch.commit();
-        alert(`Updated ${operationCount} records.`);
-      } else {
-        alert("All data is up to date.");
-      }
-
+      await batch.commit();
+      setSelectedTeacherId(null);
+      clearAbsent();
+      alert("Database successfully updated with the new GHSS Pookkottur classes and 42 teachers!");
     } catch (e) {
       console.error(e);
-      alert("Error: " + e.message);
+      alert("Error updating database: " + e.message);
     }
     setImporting(false);
   };
 
   if (loading) return (
-    <div className="h-screen w-full flex items-center justify-center bg-slate-50 text-slate-400">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-50 text-slate-500 gap-3">
+      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <span className="text-sm font-medium">Loading SchoolScheduler...</span>
     </div>
   );
 
@@ -1552,44 +1923,57 @@ export default function App() {
       
       {/* --- SCREEN LAYOUT --- */}
       <div className="screen-only flex-1 flex flex-col h-full overflow-hidden">
-        <header className="bg-slate-800 text-white shadow-md z-10 shrink-0">
+        <header className="bg-slate-900 text-white shadow-md z-10 shrink-0">
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="bg-blue-600 p-1.5 rounded text-white">
-                <Calendar className="w-5 h-5" />
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-600 p-2 rounded-xl text-white shadow-xs">
+                <Clock className="w-5 h-5" />
               </div>
-              <h1 className="font-bold text-xl tracking-tight hidden md:block">SchoolScheduler</h1>
-              <h1 className="font-bold text-xl tracking-tight md:hidden">SS</h1>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="font-bold text-lg tracking-tight">SchoolScheduler</h1>
+                  <span className="hidden sm:inline-block text-[11px] font-bold bg-slate-800 text-blue-400 px-2 py-0.5 rounded-md border border-slate-700">
+                    GHSS POOKKOTTUR
+                  </span>
+                </div>
+              </div>
             </div>
             
             <div className="hidden md:flex items-center gap-2">
-              <div className="flex bg-slate-700 rounded-lg p-1 gap-1 items-center mr-2">
-                <button 
-                  onClick={() => { setActiveTab('classes'); setSelectedTeacher(null); }}
-                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'classes' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
-                >
-                  Directory
-                </button>
-                <button 
-                  onClick={() => { setActiveTab('manage'); setSelectedTeacher(null); }}
-                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'manage' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
-                >
-                  Timetables
-                </button>
+              <div className="flex bg-slate-800 rounded-xl p-1 gap-1 items-center mr-2 border border-slate-700/70">
                 <button 
                   onClick={() => setActiveTab('substitute')}
-                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'substitute' ? 'bg-white text-slate-800 shadow' : 'text-slate-300 hover:bg-slate-600'}`}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    activeTab === 'substitute' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-300 hover:bg-slate-700'
+                  }`}
                 >
                   Generate Subs
+                </button>
+                <button 
+                  onClick={() => setActiveTab('manage')}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    activeTab === 'manage' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  Timetables ({teachers.length})
+                </button>
+                <button 
+                  onClick={() => setActiveTab('classes')}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    activeTab === 'classes' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  Classes ({classes.length})
                 </button>
               </div>
               <button 
                 onClick={handleForceReloadDefaults}
                 disabled={importing}
-                className="p-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-md transition-colors"
-                title="Reload Default Teachers"
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition-colors flex items-center gap-1.5 text-xs font-medium border border-slate-700"
+                title="Sync Database with Default GHSS Pookkottur Timetable"
               >
-                {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                {importing ? <Loader2 className="w-4 h-4 animate-spin text-blue-400" /> : <RefreshCw className="w-3.5 h-3.5 text-blue-400" />}
+                <span>Sync DB</span>
               </button>
             </div>
 
@@ -1599,30 +1983,36 @@ export default function App() {
           </div>
 
           {mobileMenuOpen && (
-            <div className="md:hidden bg-slate-700 p-4 space-y-2 border-t border-slate-600">
+            <div className="md:hidden bg-slate-800 p-4 space-y-2 border-t border-slate-700">
               <button 
-                  onClick={() => { setActiveTab('classes'); setSelectedTeacher(null); setMobileMenuOpen(false); }}
-                  className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === 'classes' ? 'bg-white text-slate-800' : 'text-slate-300'}`}
-                >
-                  Class Directory
-                </button>
-                <button 
-                  onClick={() => { setActiveTab('manage'); setSelectedTeacher(null); setMobileMenuOpen(false); }}
-                  className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === 'manage' ? 'bg-white text-slate-800' : 'text-slate-300'}`}
-                >
-                  Timetables
-                </button>
-                <button 
-                  onClick={() => { setActiveTab('substitute'); setMobileMenuOpen(false); }}
-                  className={`block w-full text-left px-4 py-2 rounded-md text-sm font-medium ${activeTab === 'substitute' ? 'bg-white text-slate-800' : 'text-slate-300'}`}
-                >
-                  Generate Subs
-                </button>
-                <button 
-                onClick={handleForceReloadDefaults}
-                className="block w-full text-left px-4 py-2 rounded-md text-sm font-medium text-slate-300 flex items-center gap-2"
+                onClick={() => { setActiveTab('substitute'); setMobileMenuOpen(false); }}
+                className={`block w-full text-left px-4 py-2.5 rounded-lg text-sm font-bold ${
+                  activeTab === 'substitute' ? 'bg-blue-600 text-white' : 'text-slate-300'
+                }`}
               >
-                <RefreshCw className="w-4 h-4" /> Reload Defaults
+                Generate Substitutions
+              </button>
+              <button 
+                onClick={() => { setActiveTab('manage'); setMobileMenuOpen(false); }}
+                className={`block w-full text-left px-4 py-2.5 rounded-lg text-sm font-bold ${
+                  activeTab === 'manage' ? 'bg-blue-600 text-white' : 'text-slate-300'
+                }`}
+              >
+                Staff Timetables ({teachers.length})
+              </button>
+              <button 
+                onClick={() => { setActiveTab('classes'); setMobileMenuOpen(false); }}
+                className={`block w-full text-left px-4 py-2.5 rounded-lg text-sm font-bold ${
+                  activeTab === 'classes' ? 'bg-blue-600 text-white' : 'text-slate-300'
+                }`}
+              >
+                Class Directory ({classes.length})
+              </button>
+              <button 
+                onClick={() => { handleForceReloadDefaults(); setMobileMenuOpen(false); }}
+                className="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium text-blue-300 flex items-center gap-2 border-t border-slate-700 pt-3"
+              >
+                <RefreshCw className="w-4 h-4" /> Sync Default Timetable DB
               </button>
             </div>
           )}
@@ -1656,38 +2046,38 @@ export default function App() {
 
             {activeTab === 'manage' && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-full min-h-0">
-                <div className="col-span-1 lg:col-span-3 h-[40vh] lg:h-full min-h-0">
+                <div className={`col-span-1 lg:col-span-3 h-full min-h-0 ${selectedTeacher ? 'hidden lg:block' : 'block'}`}>
                   <TeacherManager 
                     teachers={teachers}
-                    onSelectTeacher={setSelectedTeacher}
+                    selectedTeacherId={selectedTeacherId}
+                    onSelectTeacher={(t) => setSelectedTeacherId(t.id)}
                     onDeleteTeacher={deleteTeacher}
                     onAddTeacher={addTeacher}
                   />
                 </div>
-                <div className="col-span-1 lg:col-span-9 h-full min-h-0">
+                <div className={`col-span-1 lg:col-span-9 h-full min-h-0 ${selectedTeacher ? 'block' : 'hidden lg:block'}`}>
                   {selectedTeacher ? (
                     <TimetableEditor 
                       teacher={selectedTeacher}
                       definedClasses={classes}
                       onUpdateTimetable={updateTimetable}
-                      onClose={() => setSelectedTeacher(null)}
+                      onClose={() => setSelectedTeacherId(null)}
                     />
                   ) : (
                     <div className="hidden lg:flex h-full bg-white rounded-xl border border-slate-200 border-dashed flex-col items-center justify-center text-slate-400 p-8 text-center">
-                      <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                        <ArrowRight className="w-8 h-8 text-slate-300" />
+                      <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
+                        <Calendar className="w-8 h-8 text-slate-300" />
                       </div>
-                      <h3 className="text-lg font-medium text-slate-600 mb-1">Select a teacher</h3>
-                      <p className="max-w-sm text-sm opacity-75">Click a name from the list to edit their timetable.</p>
+                      <h3 className="text-base font-bold text-slate-600 mb-1">Select a Staff Member</h3>
+                      <p className="max-w-xs text-xs text-slate-400">
+                        Choose a teacher from the directory on the left to view or edit their weekly schedule.
+                      </p>
                     </div>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Render SubstitutionGenerator passing props. 
-                We pass PrintMode=false (implied) to render the Screen UI.
-            */}
             {activeTab === 'substitute' && (
               <SubstitutionGenerator 
                 teachers={teachers} 
@@ -1696,6 +2086,7 @@ export default function App() {
                 setSelectedDay={setSelectedDay}
                 absentIds={absentIds}
                 toggleAbsent={toggleAbsent}
+                clearAbsent={clearAbsent}
                 assignments={assignments}
                 setAssignments={setAssignments}
               />
@@ -1705,22 +2096,19 @@ export default function App() {
       </div>
       
       {/* --- PRINT LAYOUT (ONLY VISIBLE WHEN PRINTING) --- */}
-      {/* This section uses 'display: none' by default via the 'print-only' class logic 
-          defined in the style tag. We ensure it gets the SAME state as the screen. */}
       {activeTab === 'substitute' && (
-         <SubstitutionGenerator 
-           PrintMode={true} 
-           teachers={teachers} 
-           definedClasses={classes}
-           selectedDay={selectedDay}
-           // setters not needed for print
-           absentIds={absentIds}
-           toggleAbsent={() => {}}
-           assignments={assignments}
-           setAssignments={() => {}}
-         />
+        <SubstitutionGenerator 
+          PrintMode={true} 
+          teachers={teachers} 
+          definedClasses={classes}
+          selectedDay={selectedDay}
+          absentIds={absentIds}
+          toggleAbsent={() => {}}
+          clearAbsent={() => {}}
+          assignments={assignments}
+          setAssignments={() => {}}
+        />
       )}
-      
     </div>
   );
 }
