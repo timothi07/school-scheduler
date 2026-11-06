@@ -1272,31 +1272,52 @@ const SubstitutionGenerator = ({
     const originalTitle = document.title;
     const dateStr = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
     document.title = `${dateStr}_Substitution_${selectedDay}`;
-    window.print();
-    document.title = originalTitle;
+
+    // Temporarily widen mobile viewport so mobile print engines do not clip right-side columns
+    const viewportMeta = document.querySelector('meta[name="viewport"]');
+    const originalViewport = viewportMeta ? viewportMeta.getAttribute('content') : '';
+    if (viewportMeta) {
+      viewportMeta.setAttribute('content', 'width=1024');
+    }
+
+    setTimeout(() => {
+      window.print();
+      document.title = originalTitle;
+      if (viewportMeta && originalViewport) {
+        viewportMeta.setAttribute('content', originalViewport);
+      }
+    }, 150);
   };
 
   const assignedCount = substitutionData.filter(item => assignments[item.id]).length;
 
-  // Print Layout
+  // Print Layout (Optimized for both Desktop and Mobile PDF generation)
   if (PrintMode) {
     return (
-      <div className="print-only hidden bg-white text-black p-4">
-        <div className="text-center mb-4">
-          <h1 className="text-2xl font-bold uppercase tracking-wide">GHSS POOKKOTTUR — SUBSTITUTION CHART</h1>
-          <h2 className="text-base font-bold mt-1 uppercase">
+      <div className="print-only hidden bg-white text-black">
+        <div className="text-center mb-3">
+          <h1 className="text-lg font-bold uppercase tracking-wide">
+            GHSS POOKKOTTUR — SUBSTITUTION CHART
+          </h1>
+          <h2 className="text-sm font-bold mt-0.5 uppercase">
             {selectedDay} — {new Date().toLocaleDateString('en-GB')}
           </h2>
         </div>
         
-        <table className="w-full border-collapse border border-black text-sm">
+        <table className="print-table">
+          <colgroup>
+            <col style={{ width: '12.5%' }} />
+            {PERIODS.map(p => (
+              <col key={p} style={{ width: '12.5%' }} />
+            ))}
+          </colgroup>
           <thead>
             <tr>
-              <th colSpan={2} className="border border-black p-2 w-28 bg-gray-100 text-center font-bold">
+              <th className="bg-gray-100 font-bold">
                 Absent Staff
               </th>
               {PERIODS.map(p => (
-                <th key={p} className="border border-black p-2 bg-gray-100 font-bold text-center">
+                <th key={p} className="bg-gray-100 font-bold">
                   Period {p}
                 </th>
               ))}
@@ -1313,7 +1334,7 @@ const SubstitutionGenerator = ({
               
               return (
                 <tr key={absentId}>
-                  <td colSpan={2} className="border border-black p-2 font-bold bg-white text-center align-middle text-red-700 text-base">
+                  <td className="font-bold bg-white text-red-700 text-sm">
                     {teacher.name}
                   </td>
                   {PERIODS.map((p, index) => {
@@ -1342,16 +1363,20 @@ const SubstitutionGenerator = ({
                     else if (subType === 'general') colorClass = "text-amber-700";
 
                     return (
-                      <td key={p} className="border border-black p-1.5 h-16 text-center align-middle">
+                      <td key={p}>
                         {item ? (
-                          <div className="flex flex-col justify-between h-full py-0.5">
-                            <span className="text-xs font-semibold text-gray-700">{content}</span>
+                          <div className="flex flex-col items-center justify-center gap-0.5 py-0.5">
+                            <span className="text-[11px] font-semibold text-gray-700 leading-tight">
+                              {content}
+                            </span>
                             {subName ? (
-                              <span className={`font-bold text-base ${colorClass}`}>
+                              <span className={`font-bold text-sm leading-tight ${colorClass}`}>
                                 {subName}
                               </span>
                             ) : (
-                              <span className="text-xs text-red-400 italic">Unassigned</span>
+                              <span className="text-[10px] text-red-400 italic leading-tight">
+                                Unassigned
+                              </span>
                             )}
                           </div>
                         ) : (
@@ -1372,33 +1397,6 @@ const SubstitutionGenerator = ({
   // Screen Layout
   return (
     <div className="flex flex-col h-full w-full">
-      <style>{`
-        @media print {
-          @page { margin: 10mm; size: landscape; }
-          body, html, #root { 
-            height: auto !important; 
-            overflow: visible !important; 
-            background: white !important;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-          .screen-only { display: none !important; }
-          .print-only {
-            display: block !important;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-          }
-          table { width: 100%; border-collapse: collapse; border: 2px solid black; }
-          th, td { border: 1px solid black; padding: 8px; text-align: center; vertical-align: top; height: 60px; }
-          th { background-color: #f3f4f6; font-weight: bold; }
-          thead { display: table-header-group; }
-          tr { page-break-inside: avoid; }
-        }
-      `}</style>
-
       <div className="screen-only flex-1 flex flex-col h-full overflow-hidden bg-white rounded-xl shadow-sm border border-slate-200">
         {/* Top Action Bar */}
         <div className="p-4 bg-slate-800 text-white shrink-0 flex flex-wrap justify-between items-center gap-3 rounded-t-xl">
@@ -1713,7 +1711,6 @@ export default function App() {
     setAbsentIds(prev => {
       const exists = prev.includes(id);
       if (exists) {
-        // Also clean up any assignments belonging to this teacher
         setAssignments(curr => {
           const next = { ...curr };
           Object.keys(next).forEach(key => {
@@ -1869,7 +1866,7 @@ export default function App() {
     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'classes', classId));
   };
 
-  // FORCE RELOAD Action (Cleanly replaces old Firestore records with the new GHSS Pookkottur dataset)
+  // FORCE RELOAD Action
   const handleForceReloadDefaults = async () => {
     if (!user) {
       alert("Please wait for authentication to finish.");
@@ -1881,20 +1878,17 @@ export default function App() {
     try {
       const batch = writeBatch(db);
 
-      // Delete existing classes and teachers so old records (e.g. classes 5-7) are removed cleanly
       const existingClassesSnap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'classes')));
       existingClassesSnap.forEach(d => batch.delete(d.ref));
 
       const existingTeachersSnap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'teachers')));
       existingTeachersSnap.forEach(d => batch.delete(d.ref));
 
-      // Insert fresh INITIAL_CLASSES
       for (const cls of INITIAL_CLASSES) {
         const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'classes'));
         batch.set(ref, { name: cls.name, divisions: cls.divisions, createdAt: serverTimestamp() });
       }
 
-      // Insert fresh INITIAL_TEACHERS
       for (const t of INITIAL_TEACHERS) {
         const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'teachers'));
         batch.set(ref, { name: t.name, timetable: t.timetable, createdAt: serverTimestamp() });
@@ -1919,7 +1913,72 @@ export default function App() {
   );
 
   return (
-    <div className="h-screen w-full flex flex-col overflow-hidden bg-slate-100 text-slate-800 font-sans print:h-auto print:overflow-visible">
+    <div className="app-root-shell h-screen w-full flex flex-col overflow-hidden bg-slate-100 text-slate-800 font-sans print:h-auto print:overflow-visible">
+      {/* Global Print Stylesheet */}
+      <style>{`
+        @media print {
+          @page {
+            size: A4 landscape;
+            margin: 6mm;
+          }
+          html, body, #root, .app-root-shell {
+            height: auto !important;
+            min-height: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow: visible !important;
+            display: block !important;
+            background: #ffffff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .screen-only {
+            display: none !important;
+          }
+          .print-only {
+            display: block !important;
+            position: static !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 2mm !important;
+            box-sizing: border-box !important;
+          }
+          .print-table {
+            width: 100% !important;
+            max-width: 100% !important;
+            table-layout: fixed !important;
+            border-collapse: collapse !important;
+            border: 1.5px solid #000000 !important;
+          }
+          .print-table th,
+          .print-table td {
+            border: 1px solid #000000 !important;
+            padding: 4px 2px !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+            font-size: 11px !important;
+            line-height: 1.25 !important;
+            height: 48px !important;
+          }
+          .print-table th {
+            background-color: #f3f4f6 !important;
+            font-weight: 700 !important;
+            height: 32px !important;
+          }
+          .print-table thead {
+            display: table-header-group !important;
+          }
+          .print-table tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+        }
+      `}</style>
       
       {/* --- SCREEN LAYOUT --- */}
       <div className="screen-only flex-1 flex flex-col h-full overflow-hidden">
