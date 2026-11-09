@@ -71,428 +71,427 @@ const INITIAL_CLASSES = [
 ];
 
 const INITIAL_TEACHERS = [
- {
-   name: "CS",
-   timetable: {
-     "Monday": ["", "9D", "10A, 10H", "", "9I", "", "10G"],
-     "Tuesday": ["", "8J", "", "10A, 10H", "", "9A", "10G"],
-     "Wednesday": ["", "8H", "9A", "8A", "", "10A", "9D"],
-     "Thursday": ["", "8A", "8J", "", "8H", "10A, 10H", "10F"],
-     "Friday": ["", "10A, 10H", "10A", "10A", "", "10F", "9I"]
-   }
- },
- {
-   name: "HN",
-   timetable: {
-     "Monday": ["10B", "", "8I", "10H", "", "8C", "10B"],
-     "Tuesday": ["10B", "8I", "10H", "", "", "8C", ""],
-     "Wednesday": ["10B", "", "10B", "10B", "10H", "", ""],
-     "Thursday": ["", "", "8C", "", "10H", "8I", "10B"],
-     "Friday": ["10B", "", "8C", "8I", "", "", "10H"]
-   }
- },
- {
-   name: "SH",
-   timetable: {
-     "Monday": ["9A", "9E", "", "", "8J", "10C", "8I"],
-     "Tuesday": ["8I", "", "8J", "9D", "10B", "", "10C"],
-     "Wednesday": ["9A", "", "", "9D", "8G", "", "8H"],
-     "Thursday": ["10C", "", "", "9E", "10D", "8H", ""],
-     "Friday": ["10C", "", "10B", "10D", "", "8G", ""]
-   }
- },
- {
-   name: "SD",
-   timetable: {
-     "Monday": ["", "8D", "10C", "8G", "", "10E", "8A, 8G"],
-     "Tuesday": ["", "8G", "8B", "", "8A, 8G", "10E", "8F"],
-     "Wednesday": ["10D", "9H", "10C", "", "8F", "9F", ""],
-     "Thursday": ["9C", "", "8D", "9H", "8A, 8G", "", ""],
-     "Friday": ["8B", "", "9F", "9C", "8A, 8G", "", "10D"]
-   }
- },
- {
-   name: "LC",
-   timetable: {
-     "Monday": ["10E", "10H", "", "8E", "9H", "8E", ""],
-     "Tuesday": ["10E", "", "", "9H", "10H", "10H", ""],
-     "Wednesday": ["10E", "10H", "", "", "8E", "8E", "10H"],
-     "Thursday": ["", "10H", "", "10E", "8E", "9H", ""],
-     "Friday": ["10E", "9H", "", "9H", "10H", "10H", ""]
-   }
- },
- {
-   name: "SW",
-   timetable: {
-     "Monday": ["10F", "10C", "9A", "", "8I", "10D", ""],
-     "Tuesday": ["10F", "9B", "", "9A", "", "10C", "8H"],
-     "Wednesday": ["10F", "", "8I", "9F", "10D", "", ""],
-     "Thursday": ["10F", "", "9F", "9F", "9B", "", "10D"],
-     "Friday": ["10F", "10F", "", "8H", "", "", "10C"]
-   }
- },
- {
-   name: "SKK",
-   timetable: {
-     "Monday": ["10G", "", "8H", "8H", "10A", "", "9A"],
-     "Tuesday": ["10G", "8B", "", "8H", "9A", "", "10A"],
-     "Wednesday": ["10G", "", "", "9A", "", "8B", "10A"],
-     "Thursday": ["10G", "8B", "", "10A", "9A", "", ""],
-     "Friday": ["10G", "9A", "", "", "8B", "10A", ""]
-   }
- },
- {
-   name: "DDB",
-   timetable: {
-     "Monday": ["10H", "8C", "", "10A", "8H", "8H", ""],
-     "Tuesday": ["10H", "", "8C", "", "10A", "8H", ""],
-     "Wednesday": ["10H", "", "8H", "", "10A", "9I", "8C"],
-     "Thursday": ["10H", "10A", "", "", "9I", "9I", "8C"],
-     "Friday": ["10H", "", "8H", "", "10A", "8C", ""]
-   }
- },
- {
-   name: "SA",
-   timetable: {
-     "Monday": ["9B", "", "8F", "8D", "", "10H", "9H"],
-     "Tuesday": ["", "9A", "", "10F", "9G", "", ""],
-     "Wednesday": ["9B", "8D", "", "", "9I", "10F", "8F"],
-     "Thursday": ["", "", "8E", "9A", "9H", "", "10A"],
-     "Friday": ["10A", "9I", "", "10H", "8E", "9G", ""]
-   }
- },
- {
-   name: "NTK",
-   timetable: {
-     "Monday": ["9F", "", "", "", "9E", "8B", "9B"],
-     "Tuesday": ["", "10H", "8F", "", "9B", "10G", "8B"],
-     "Wednesday": ["9F", "8F", "", "10F", "9C", "8H", ""],
-     "Thursday": ["", "8G", "8H", "9C", "", "10F", "10H"],
-     "Friday": ["", "10G", "8G", "", "9E", "9E", ""]
-   }
- },
- {
-   name: "KK",
-   timetable: {
-     "Monday": ["9D", "", "10E", "8C", "", "9B", "9I"],
-     "Tuesday": ["9D", "8C", "9I", "", "8H", "", "8G"],
-     "Wednesday": ["", "8G", "9B", "8H", "", "10H", ""],
-     "Thursday": ["9B", "", "10H", "8G", "", "10E", "8H"],
-     "Friday": ["9D", "", "10H", "", "10E", "9I", "8C"]
-   }
- },
- {
-   name: "SJL",
-   timetable: {
-     "Monday": ["9I", "", "8G", "8I", "10C", "", "10F"],
-     "Tuesday": ["9I", "10C", "10C", "", "10F", "8I", ""],
-     "Wednesday": ["9I", "", "8G", "8G", "", "8I", "10F"],
-     "Thursday": ["", "10F", "9I", "10C", "", "", "8I"],
-     "Friday": ["9I", "", "", "10C", "8I", "", "10F"]
-   }
- },
- {
-   name: "PMD",
-   timetable: {
-     "Monday": ["9C", "10G", "", "8F", "10D", "", "8J"],
-     "Tuesday": ["9C", "10G", "", "10D", "8F", "8J", ""],
-     "Wednesday": ["9C", "10G", "", "8F", "8J", "", "10D"],
-     "Thursday": ["10D", "10G", "8F", "", "8J", "", "10D"],
-     "Friday": ["9C", "8F", "10G", "", "8J", "10D", ""]
-   }
- },
- {
-   name: "KAJ",
-   timetable: {
-     "Monday": ["", "8I", "10D", "", "9A", "10F", ""],
-     "Tuesday": ["9G", "", "9A", "8I", "", "10D", "10F"],
-     "Wednesday": ["9G", "10F", "", "10D", "9A", "", "8I"],
-     "Thursday": ["9G", "", "10D", "10F", "8I", "", ""],
-     "Friday": ["9G", "10D", "8I", "", "10F", "", "9A"]
-   }
- },
- {
-   name: "AV",
-   timetable: {
-     "Monday": ["10D", "10D", "10G", "", "10B", "8J", ""],
-     "Tuesday": ["9H", "", "10G", "8J", "10D", "", "10B"],
-     "Wednesday": ["9H", "", "8J", "", "10B", "", "10G"],
-     "Thursday": ["9H", "", "10B", "8J", "", "10G", ""],
-     "Friday": ["9H", "", "", "10B", "10G", "8J", ""]
-   }
- },
- {
-   name: "AMG",
-   timetable: {
-     "Monday": ["", "9I", "", "8J", "9C", "", ""],
-     "Tuesday": ["9E", "", "8G", "", "9C", "9C", "10H"],
-     "Wednesday": ["", "9I", "10H", "9B", "", "8J", "10E"],
-     "Thursday": ["9E", "", "10E", "10H", "9D", "9D", ""],
-     "Friday": ["9B", "9B", "", "8G", "", "9D", "10E"]
-   }
- },
- {
-   name: "RVV",
-   timetable: {
-     "Monday": ["10A", "", "9E", "10G", "", "8I", "9F"],
-     "Tuesday": ["8A", "", "10D", "10G", "9E", "", ""],
-     "Wednesday": ["8A", "10D", "", "10A", "8I", "9G", ""],
-     "Thursday": ["10A", "10D", "10G", "", "9G", "", "9F"],
-     "Friday": ["", "9F", "9E", "9G", "", "8I", "8A"]
-   }
- },
- {
-   name: "FJ",
-   timetable: {
-     "Monday": ["", "9A", "8J", "10F", "", "", "9C"],
-     "Tuesday": ["", "10B", "10F", "", "9H", "8B", "9C"],
-     "Wednesday": ["8B", "", "9H", "9C", "10C", "", "8J"],
-     "Thursday": ["8B", "", "9H", "10B", "", "9A", "10C"],
-     "Friday": ["9A", "8J", "", "10F", "10C", "", "10B"]
-   }
- },
- {
-   name: "FK",
-   timetable: {
-     "Monday": ["8C", "", "9C", "9D", "8A", "", ""],
-     "Tuesday": ["", "9D", "10B", "9F", "", "9E", ""],
-     "Wednesday": ["8C", "", "9C", "10G", "", "10E", "8B"],
-     "Thursday": ["9A", "9A", "", "10G", "10E", "9E", ""],
-     "Friday": ["8A", "8B", "", "9F", "9A", "10B", ""]
-   }
- },
- {
-   name: "AVK",
-   timetable: {
-     "Monday": ["8F", "", "9F", "10C", "", "10B", "8A, 8G"],
-     "Tuesday": ["8F", "9F", "", "9B", "8A, 8G", "10B", ""],
-     "Wednesday": ["", "9B", "", "", "9F", "10C", "10B"],
-     "Thursday": ["10C", "10C", "", "8F", "8A, 8G", "9B", ""],
-     "Friday": ["8F", "", "9B", "", "8A, 8G", "10C", "9F"]
-   }
- },
- {
-   name: "NVM",
-   timetable: {
-     "Monday": ["8E", "9G", "10A, 10H", "", "10G", "9A, 9I", ""],
-     "Tuesday": ["", "9G", "8I", "10A, 10H", "", "8E", "9A, 9I"],
-     "Wednesday": ["", "", "10G", "8I", "9G", "", "8E"],
-     "Thursday": ["8E", "8I", "", "", "10G", "10A, 10H", "9A, 9I"],
-     "Friday": ["8I", "10A, 10H", "9A, 9I", "", "9G", "10G", ""]
-   }
- },
- {
-   name: "SM",
-   timetable: {
-     "Monday": ["8J", "", "10F", "9I", "", "", ""],
-     "Tuesday": ["8J", "8F", "", "", "9I", "10F", ""],
-     "Wednesday": ["8J", "8J", "10F", "", "", "8F", "9I"],
-     "Thursday": ["", "", "10F", "9I", "8F", "", "8J"],
-     "Friday": ["8J", "", "10F", "9I", "8F", "", "8J"]
-   }
- },
- {
-   name: "PKP",
-   timetable: {
-     "Monday": ["8G", "9F", "9G", "", "8D", "", "8H"],
-     "Tuesday": ["8G", "8D", "8H", "", "", "9G", "9F"],
-     "Wednesday": ["8G", "9G", "8D", "", "8H", "", "9F"],
-     "Thursday": ["8G", "9G", "", "8H", "9F", "8D", ""],
-     "Friday": ["8G", "", "9G", "8D", "9F", "", "8H"]
-   }
- },
- {
-   name: "ASV",
-   timetable: {
-     "Monday": ["8H", "10E", "", "9G", "9B", "", "10C"],
-     "Tuesday": ["10C", "", "9G", "", "10E", "9B", ""],
-     "Wednesday": ["8H", "", "10E", "9G", "9B", "", "10C"],
-     "Thursday": ["8H", "", "9G", "9B", "10C", "", "10E"],
-     "Friday": ["8H", "10C", "", "10E", "9B", "", "9G"]
-   }
- },
- {
-   name: "STN",
-   timetable: {
-     "Monday": ["9G", "", "9I", "10E", "", "10A", ""],
-     "Tuesday": ["", "9H", "8E", "9I", "", "8D", "8C"],
-     "Wednesday": ["8I", "8A", "", "9H", "8D", "8C", ""],
-     "Thursday": ["8I", "8J", "8A", "", "10A", "10D", ""],
-     "Friday": ["", "9G", "10D", "8J", "", "10E", "8E"]
-   }
- },
- {
-   name: "RCK",
-   timetable: {
-     "Monday": ["", "8H", "", "", "10F", "9C", ""],
-     "Tuesday": ["8H", "10F", "", "", "8D", "", ""],
-     "Wednesday": ["8D", "9C", "", "", "10F", "", ""],
-     "Thursday": ["8D", "8H", "", "", "10F", "9C", ""],
-     "Friday": ["8D", "", "", "", "8H", "9C", ""]
-   }
- },
- {
-   name: "SV",
-   timetable: {
-     "Monday": ["8I", "10B", "", "9E", "10H", "9A, 9I", ""],
-     "Tuesday": ["9B", "", "10A", "8C", "8I", "", "9A, 9I"],
-     "Wednesday": ["10A", "", "9G", "10H", "", "", "9E"],
-     "Thursday": ["", "8E", "9B", "9G", "", "10B", "9A, 9I"],
-     "Friday": ["", "", "9A, 9I", "8E", "8C", "", ""]
-   }
- },
- {
-   name: "LH",
-   timetable: {
-     "Monday": ["", "8J", "10A, 10H", "10D", "", "9H", "9D"],
-     "Tuesday": ["8B, 8C", "", "9D", "10A, 10H", "8J", "", "10D"],
-     "Wednesday": ["", "8B, 8C", "", "8J", "9H", "10D", ""],
-     "Thursday": ["8J", "9D", "", "8B, 8C", "", "10A, 10H", "9H"],
-     "Friday": ["10D", "10A, 10H", "", "8B, 8C", "9H", "", "9D"]
-   }
- },
- {
-   name: "IK",
-   timetable: {
-     "Monday": ["9E", "", "", "", "10E", "", "8A, 8G"],
-     "Tuesday": ["8B, 8C", "", "10E", "10E", "8A, 8G", "", "10E"],
-     "Wednesday": ["9E", "8B, 8C", "", "", "10E", "", ""],
-     "Thursday": ["10E", "9E", "", "8B, 8C", "8A, 8G", "8E", ""],
-     "Friday": ["", "", "10E", "8B, 8C", "8A, 8G", "", "9E"]
-   }
- },
- {
-   name: "KAK",
-   timetable: {
-     "Monday": ["", "8G", "8E", "", "8F", "8F", "10E"],
-     "Tuesday": ["", "10E", "", "8G", "8E", "9I", ""],
-     "Wednesday": ["", "10E", "8E", "9I", "", "8G", ""],
-     "Thursday": ["9I", "10E", "8G", "", "", "8F", "8E"],
-     "Friday": ["", "10E", "", "", "9I", "8E", "8G"]
-   }
- },
- {
-   name: "KVJ",
-   timetable: {
-     "Monday": ["10C", "9C", "", "9B", "8B", "8A", ""],
-     "Tuesday": ["", "9C", "", "10C", "8B", "8A", ""],
-     "Wednesday": ["", "", "8A", "10C", "8B", "", "9B"],
-     "Thursday": ["8A", "9C", "10C", "", "8B", "", "9B"],
-     "Friday": ["", "8A", "10C", "", "9C", "9B", "8B"]
-   }
- },
- {
-   name: "MNP",
-   timetable: {
-     "Monday": ["9H", "8A", "", "", "8G", "9E", "10D"],
-     "Tuesday": ["10D", "", "9H", "9E", "", "8G", "8A"],
-     "Wednesday": ["", "", "10D", "9E", "", "9H", "8G"],
-     "Thursday": ["", "9H", "9E", "10D", "", "8A", "8G"],
-     "Friday": ["9E", "", "9H", "8A", "10D", "", ""]
-   }
- },
- {
-   name: "RKC",
-   timetable: {
-     "Monday": ["", "9H", "10B", "", "9G", "9G", "9G"],
-     "Tuesday": ["", "8A", "", "9G", "10G", "10A", ""],
-     "Wednesday": ["", "10A", "10A", "", "10G", "10G", "9H"],
-     "Thursday": ["", "10G", "8B", "", "10B", "9G", ""],
-     "Friday": ["", "10B", "8A", "10G", "", "8B", "10G"]
-   }
- },
- {
-   name: "SMR",
-   timetable: {
-     "Monday": ["8A", "", "9B", "9A", "8C", "", "8B"],
-     "Tuesday": ["9A", "", "8A", "8B", "8C", "", "9B"],
-     "Wednesday": ["", "9A", "8C", "8B", "", "9B", "8A"],
-     "Thursday": ["", "9B", "9A", "8A", "", "8C", "8B"],
-     "Friday": ["", "8C", "8B", "9A", "", "8A", "9B"]
-   }
- },
- {
-   name: "CPS",
-   timetable: {
-     "Monday": ["", "10A", "9D", "10B", "", "", "9E"],
-     "Tuesday": ["10A", "10A", "", "10B", "", "9D", "9E"],
-     "Wednesday": ["10C", "10C", "9E", "", "9D", "10B", ""],
-     "Thursday": ["", "10B", "10A", "9D", "", "10C", "9E"],
-     "Friday": ["", "9E", "9D", "", "10B", "", "10A"]
-   }
- },
- {
-   name: "SML",
-   timetable: {
-     "Monday": ["", "", "8A", "9F", "", "", ""],
-     "Tuesday": ["", "8H", "9B", "8E", "", "8F", "8D"],
-     "Wednesday": ["", "9E", "8B", "8C", "", "9A", "9G"],
-     "Thursday": ["", "9I", "8I", "8I", "", "8G", "9C"],
-     "Friday": ["", "8I", "8J", "", "9D", "9H", "8I"]
-   }
- },
- {
-   name: "KYA",
-   timetable: {
-     "Monday": ["", "9B", "8B", "", "", "8G", "8E"],
-     "Tuesday": ["", "9I", "9E", "8A", "", "", "9G"],
-     "Wednesday": ["", "8I", "9D", "", "8A", "8A", "9A"],
-     "Thursday": ["", "9F", "", "", "8C", "8J", "8A"],
-     "Friday": ["", "9C", "8D", "8F", "", "8H", "9H"]
-   }
- },
- {
-   name: "PET",
-   timetable: {
-     "Monday": ["", "10F", "8C, 8D", "8A, 8B", "", "10G", "10A"],
-     "Tuesday": ["", "10D", "9F", "", "10C", "9H", "8I, 8J"],
-     "Wednesday": ["", "10B", "9I", "10E", "", "9E", "9C"],
-     "Thursday": ["", "", "9D", "10H", "", "", "9G"],
-     "Friday": ["", "8G, 8H", "8E, 8F", "9B", "", "9A", ""]
-   }
- },
- {
-   name: "E6",
-   timetable: {
-     "Monday": ["", "8F", "9H", "9H", "", "9D", "8D"],
-     "Tuesday": ["", "9E", "8D", "8F", "", "9F", "9H"],
-     "Wednesday": ["8F", "9F", "", "8D", "9E", "9D", ""],
-     "Thursday": ["9F", "", "8F", "8D", "9E", "", "9D"],
-     "Friday": ["9F", "9D", "", "9E", "", "8F", "8D"]
-   }
- },
- {
-   name: "B4",
-   timetable: {
-     "Monday": ["8B", "8B", "", "", "9F", "8D", "8C"],
-     "Tuesday": ["8E", "8E", "", "9C", "9F", "", "9D"],
-     "Wednesday": ["9D", "8E", "8F", "", "8C", "8D", ""],
-     "Thursday": ["8C", "8C", "", "", "8D", "8B", "8F"],
-     "Friday": ["8C", "8E", "", "", "8D", "8D", "9C"]
-   }
- },
- {
-   name: "SS6",
-   timetable: {
-     "Monday": ["", "8E", "", "9C", "9D", "9F", ""],
-     "Tuesday": ["9F", "", "9C", "8D", "9D", "", "8E"],
-     "Wednesday": ["", "9D", "9F", "8E", "", "9C", "8D"],
-     "Thursday": ["9D", "8D", "", "8E", "9C", "9F", ""],
-     "Friday": ["", "8D", "9C", "9D", "", "9F", ""]
-   }
- },
- {
-   name: "H4",
-   timetable: {
-     "Monday": ["8D", "", "", "", "8E", "", "8F"],
-     "Tuesday": ["8D", "", "", "", "", "", ""],
-     "Wednesday": ["8E", "", "", "", "", "", ""],
-     "Thursday": ["8F", "", "", "", "", "", "8D"],
-     "Friday": ["8E", "", "", "", "", "", "8F"]
-   }
- }
+  {
+    name: "CS",
+    timetable: {
+      "Monday": ["", "9D", "10A, 10H", "", "9I", "", "10G"],
+      "Tuesday": ["", "8J", "", "10A, 10H", "", "9A", "10G"],
+      "Wednesday": ["", "8H", "9A", "8A", "", "10A", "9D"],
+      "Thursday": ["", "8A", "8J", "", "8H", "10A, 10H", "10F"],
+      "Friday": ["", "10A, 10H", "10A", "10A", "", "10F", "9I"]
+    }
+  },
+  {
+    name: "HN",
+    timetable: {
+      "Monday": ["10B", "", "8I", "10H", "", "8C", "10B"],
+      "Tuesday": ["10B", "8I", "10H", "", "", "8C", ""],
+      "Wednesday": ["10B", "", "10B", "10B", "10H", "", ""],
+      "Thursday": ["", "", "8C", "", "10H", "8I", "10B"],
+      "Friday": ["10B", "", "8C", "8I", "", "", "10H"]
+    }
+  },
+  {
+    name: "SH",
+    timetable: {
+      "Monday": ["9A", "9E", "", "", "8J", "10C", "8I"],
+      "Tuesday": ["8I", "", "8J", "9D", "10B", "", "10C"],
+      "Wednesday": ["9A", "", "", "9D", "8G", "", "8H"],
+      "Thursday": ["10C", "", "", "9E", "10D", "8H", ""],
+      "Friday": ["10C", "", "10B", "10D", "", "8G", ""]
+    }
+  },
+  {
+    name: "SD",
+    timetable: {
+      "Monday": ["", "8D", "10C", "8G", "", "10E", "8A, 8G"],
+      "Tuesday": ["", "8G", "8B", "", "8A, 8G", "10E", "8F"],
+      "Wednesday": ["10D", "9H", "10C", "", "8F", "9F", ""],
+      "Thursday": ["9C", "", "8D", "9H", "8A, 8G", "", ""],
+      "Friday": ["8B", "", "9F", "9C", "8A, 8G", "", "10D"]
+    }
+  },
+  {
+    name: "LC",
+    timetable: {
+      "Monday": ["10E", "10H", "", "8E", "9H", "8E", ""],
+      "Tuesday": ["10E", "", "", "9H", "10H", "10H", ""],
+      "Wednesday": ["10E", "10H", "", "", "8E", "8E", "10H"],
+      "Thursday": ["", "10H", "", "10E", "8E", "9H", ""],
+      "Friday": ["10E", "9H", "", "9H", "10H", "10H", ""]
+    }
+  },
+  {
+    name: "SW",
+    timetable: {
+      "Monday": ["10F", "10C", "9A", "", "8I", "10D", ""],
+      "Tuesday": ["10F", "9B", "", "9A", "", "10C", "8H"],
+      "Wednesday": ["10F", "", "8I", "9F", "10D", "", ""],
+      "Thursday": ["10F", "", "9F", "9F", "9B", "", "10D"],
+      "Friday": ["10F", "10F", "", "8H", "", "", "10C"]
+    }
+  },
+  {
+    name: "SKK",
+    timetable: {
+      "Monday": ["10G", "", "8H", "8H", "10A", "", "9A"],
+      "Tuesday": ["10G", "8B", "", "8H", "9A", "", "10A"],
+      "Wednesday": ["10G", "", "", "9A", "", "8B", "10A"],
+      "Thursday": ["10G", "8B", "", "10A", "9A", "", ""],
+      "Friday": ["10G", "9A", "", "", "8B", "10A", ""]
+    }
+  },
+  {
+    name: "DDB",
+    timetable: {
+      "Monday": ["10H", "8C", "", "10A", "8H", "8H", ""],
+      "Tuesday": ["10H", "", "8C", "", "10A", "8H", ""],
+      "Wednesday": ["10H", "", "8H", "", "10A", "9I", "8C"],
+      "Thursday": ["10H", "10A", "", "", "9I", "9I", "8C"],
+      "Friday": ["10H", "", "8H", "", "10A", "8C", ""]
+    }
+  },
+  {
+    name: "SA",
+    timetable: {
+      "Monday": ["9B", "", "8F", "8D", "", "10H", "9H"],
+      "Tuesday": ["", "9A", "", "10F", "9G", "", ""],
+      "Wednesday": ["9B", "8D", "", "", "9I", "10F", "8F"],
+      "Thursday": ["", "", "8E", "9A", "9H", "", "10A"],
+      "Friday": ["10A", "9I", "", "10H", "8E", "9G", ""]
+    }
+  },
+  {
+    name: "NTK",
+    timetable: {
+      "Monday": ["9F", "", "", "", "9E", "8B", "9B"],
+      "Tuesday": ["", "10H", "8F", "", "9B", "10G", "8B"],
+      "Wednesday": ["9F", "8F", "", "10F", "9C", "8H", ""],
+      "Thursday": ["", "8G", "8H", "9C", "", "10F", "10H"],
+      "Friday": ["", "10G", "8G", "", "9E", "9E", ""]
+    }
+  },
+  {
+    name: "KK",
+    timetable: {
+      "Monday": ["9D", "", "10E", "8C", "", "9B", "9I"],
+      "Tuesday": ["9D", "8C", "9I", "", "8H", "", "8G"],
+      "Wednesday": ["", "8G", "9B", "8H", "", "10H", ""],
+      "Thursday": ["9B", "", "10H", "8G", "", "10E", "8H"],
+      "Friday": ["9D", "", "10H", "", "10E", "9I", "8C"]
+    }
+  },
+  {
+    name: "SJL",
+    timetable: {
+      "Monday": ["9I", "", "8G", "8I", "10C", "", "10F"],
+      "Tuesday": ["9I", "10C", "10C", "", "10F", "8I", ""],
+      "Wednesday": ["9I", "", "8G", "8G", "", "8I", "10F"],
+      "Thursday": ["", "10F", "9I", "10C", "", "", "8I"],
+      "Friday": ["9I", "", "", "10C", "8I", "", "10F"]
+    }
+  },
+  {
+    name: "PMD",
+    timetable: {
+      "Monday": ["9C", "10G", "", "8F", "10D", "", "8J"],
+      "Tuesday": ["9C", "10G", "", "10D", "8F", "8J", ""],
+      "Wednesday": ["9C", "10G", "", "8F", "8J", "", "10D"],
+      "Thursday": ["10D", "10G", "8F", "", "8J", "", "10D"],
+      "Friday": ["9C", "8F", "10G", "", "8J", "10D", ""]
+    }
+  },
+  {
+    name: "KAJ",
+    timetable: {
+      "Monday": ["", "8I", "10D", "", "9A", "10F", ""],
+      "Tuesday": ["9G", "", "9A", "8I", "", "10D", "10F"],
+      "Wednesday": ["9G", "10F", "", "10D", "9A", "", "8I"],
+      "Thursday": ["9G", "", "10D", "10F", "8I", "", ""],
+      "Friday": ["9G", "10D", "8I", "", "10F", "", "9A"]
+    }
+  },
+  {
+    name: "AV",
+    timetable: {
+      "Monday": ["10D", "10D", "10G", "", "10B", "8J", ""],
+      "Tuesday": ["9H", "", "10G", "8J", "10D", "", "10B"],
+      "Wednesday": ["9H", "", "8J", "", "10B", "", "10G"],
+      "Thursday": ["9H", "", "10B", "8J", "", "10G", ""],
+      "Friday": ["9H", "", "", "10B", "10G", "8J", ""]
+    }
+  },
+  {
+    name: "AMG",
+    timetable: {
+      "Monday": ["", "9I", "", "8J", "9C", "", ""],
+      "Tuesday": ["9E", "", "8G", "", "9C", "9C", "10H"],
+      "Wednesday": ["", "9I", "10H", "9B", "", "8J", "10E"],
+      "Thursday": ["9E", "", "10E", "10H", "9D", "9D", ""],
+      "Friday": ["9B", "9B", "", "8G", "", "9D", "10E"]
+    }
+  },
+  {
+    name: "RVV",
+    timetable: {
+      "Monday": ["10A", "", "9E", "10G", "", "8I", "9F"],
+      "Tuesday": ["8A", "", "10D", "10G", "9E", "", ""],
+      "Wednesday": ["8A", "10D", "", "10A", "8I", "9G", ""],
+      "Thursday": ["10A", "10D", "10G", "", "9G", "", "9F"],
+      "Friday": ["", "9F", "9E", "9G", "", "8I", "8A"]
+    }
+  },
+  {
+    name: "FJ",
+    timetable: {
+      "Monday": ["", "9A", "8J", "10F", "", "", "9C"],
+      "Tuesday": ["", "10B", "10F", "", "9H", "8B", "9C"],
+      "Wednesday": ["8B", "", "9H", "9C", "10C", "", "8J"],
+      "Thursday": ["8B", "", "9H", "10B", "", "9A", "10C"],
+      "Friday": ["9A", "8J", "", "10F", "10C", "", "10B"]
+    }
+  },
+  {
+    name: "FK",
+    timetable: {
+      "Monday": ["8C", "", "9C", "9D", "8A", "", ""],
+      "Tuesday": ["", "9D", "10B", "9F", "", "9E", ""],
+      "Wednesday": ["8C", "", "9C", "10G", "", "10E", "8B"],
+      "Thursday": ["9A", "9A", "", "10G", "10E", "9E", ""],
+      "Friday": ["8A", "8B", "", "9F", "9A", "10B", ""]
+    }
+  },
+  {
+    name: "AVK",
+    timetable: {
+      "Monday": ["8F", "", "9F", "10C", "", "10B", "8A, 8G"],
+      "Tuesday": ["8F", "9F", "", "9B", "8A, 8G", "10B", ""],
+      "Wednesday": ["", "9B", "", "", "9F", "10C", "10B"],
+      "Thursday": ["10C", "10C", "", "8F", "8A, 8G", "9B", ""],
+      "Friday": ["8F", "", "9B", "", "8A, 8G", "10C", "9F"]
+    }
+  },
+  {
+    name: "NVM",
+    timetable: {
+      "Monday": ["8E", "9G", "10A, 10H", "", "10G", "9A, 9I", ""],
+      "Tuesday": ["", "9G", "8I", "10A, 10H", "", "8E", "9A, 9I"],
+      "Wednesday": ["", "", "10G", "8I", "9G", "", "8E"],
+      "Thursday": ["8E", "8I", "", "", "10G", "10A, 10H", "9A, 9I"],
+      "Friday": ["8I", "10A, 10H", "9A, 9I", "", "9G", "10G", ""]
+    }
+  },
+  {
+    name: "SM",
+    timetable: {
+      "Monday": ["8J", "", "10F", "9I", "", "", ""],
+      "Tuesday": ["8J", "8F", "", "", "9I", "10F", ""],
+      "Wednesday": ["8J", "8J", "10F", "", "", "8F", "9I"],
+      "Thursday": ["", "", "10F", "9I", "8F", "", "8J"],
+      "Friday": ["8J", "", "10F", "9I", "8F", "", "8J"]
+    }
+  },
+  {
+    name: "PKP",
+    timetable: {
+      "Monday": ["8G", "9F", "9G", "", "8D", "", "8H"],
+      "Tuesday": ["8G", "8D", "8H", "", "", "9G", "9F"],
+      "Wednesday": ["8G", "9G", "8D", "", "8H", "", "9F"],
+      "Thursday": ["8G", "9G", "", "8H", "9F", "8D", ""],
+      "Friday": ["8G", "", "9G", "8D", "9F", "", "8H"]
+    }
+  },
+  {
+    name: "ASV",
+    timetable: {
+      "Monday": ["8H", "10E", "", "9G", "9B", "", "10C"],
+      "Tuesday": ["10C", "", "9G", "", "10E", "9B", ""],
+      "Wednesday": ["8H", "", "10E", "9G", "9B", "", "10C"],
+      "Thursday": ["8H", "", "9G", "9B", "10C", "", "10E"],
+      "Friday": ["8H", "10C", "", "10E", "9B", "", "9G"]
+    }
+  },
+  {
+    name: "STN",
+    timetable: {
+      "Monday": ["9G", "", "9I", "10E", "", "10A", ""],
+      "Tuesday": ["", "9H", "8E", "9I", "", "8D", "8C"],
+      "Wednesday": ["8I", "8A", "", "9H", "8D", "8C", ""],
+      "Thursday": ["8I", "8J", "8A", "", "10A", "10D", ""],
+      "Friday": ["", "9G", "10D", "8J", "", "10E", "8E"]
+    }
+  },
+  {
+    name: "RCK",
+    timetable: {
+      "Monday": ["", "8H", "", "", "10F", "9C", ""],
+      "Tuesday": ["8H", "10F", "", "", "8D", "", ""],
+      "Wednesday": ["8D", "9C", "", "", "10F", "", ""],
+      "Thursday": ["8D", "8H", "", "", "10F", "9C", ""],
+      "Friday": ["8D", "", "", "", "8H", "9C", ""]
+    }
+  },
+  {
+    name: "SV",
+    timetable: {
+      "Monday": ["8I", "10B", "", "9E", "10H", "9A, 9I", ""],
+      "Tuesday": ["9B", "", "10A", "8C", "8I", "", "9A, 9I"],
+      "Wednesday": ["10A", "", "9G", "10H", "", "", "9E"],
+      "Thursday": ["", "8E", "9B", "9G", "", "10B", "9A, 9I"],
+      "Friday": ["", "", "9A, 9I", "8E", "8C", "", ""]
+    }
+  },
+  {
+    name: "LH",
+    timetable: {
+      "Monday": ["", "8J", "10A, 10H", "10D", "", "9H", "9D"],
+      "Tuesday": ["8B, 8C", "", "9D", "10A, 10H", "8J", "", "10D"],
+      "Wednesday": ["", "8B, 8C", "", "8J", "9H", "10D", ""],
+      "Thursday": ["8J", "9D", "", "8B, 8C", "", "10A, 10H", "9H"],
+      "Friday": ["10D", "10A, 10H", "", "8B, 8C", "9H", "", "9D"]
+    }
+  },
+  {
+    name: "IK",
+    timetable: {
+      "Monday": ["9E", "", "", "", "10E", "", "8A, 8G"],
+      "Tuesday": ["8B, 8C", "", "10E", "10E", "8A, 8G", "", "10E"],
+      "Wednesday": ["9E", "8B, 8C", "", "", "10E", "", ""],
+      "Thursday": ["10E", "9E", "", "8B, 8C", "8A, 8G", "8E", ""],
+      "Friday": ["", "", "10E", "8B, 8C", "8A, 8G", "", "9E"]
+    }
+  },
+  {
+    name: "KAK",
+    timetable: {
+      "Monday": ["", "8G", "8E", "", "8F", "8F", "10E"],
+      "Tuesday": ["", "10E", "", "8G", "8E", "9I", ""],
+      "Wednesday": ["", "10E", "8E", "9I", "", "8G", ""],
+      "Thursday": ["9I", "10E", "8G", "", "", "8F", "8E"],
+      "Friday": ["", "10E", "", "", "9I", "8E", "8G"]
+    }
+  },
+  {
+    name: "KVJ",
+    timetable: {
+      "Monday": ["10C", "9C", "", "9B", "8B", "8A", ""],
+      "Tuesday": ["", "9C", "", "10C", "8B", "8A", ""],
+      "Wednesday": ["", "", "8A", "10C", "8B", "", "9B"],
+      "Thursday": ["8A", "9C", "10C", "", "8B", "", "9B"],
+      "Friday": ["", "8A", "10C", "", "9C", "9B", "8B"]
+    }
+  },
+  {
+    name: "MNP",
+    timetable: {
+      "Monday": ["9H", "8A", "", "", "8G", "9E", "10D"],
+      "Tuesday": ["10D", "", "9H", "9E", "", "8G", "8A"],
+      "Wednesday": ["", "", "10D", "9E", "", "9H", "8G"],
+      "Thursday": ["", "9H", "9E", "10D", "", "8A", "8G"],
+      "Friday": ["9E", "", "9H", "8A", "10D", "", ""]
+    }
+  },
+  {
+    name: "RKC",
+    timetable: {
+      "Monday": ["", "9H", "10B", "", "9G", "9G", "9G"],
+      "Tuesday": ["", "8A", "", "9G", "10G", "10A", ""],
+      "Wednesday": ["", "10A", "10A", "", "10G", "10G", "9H"],
+      "Thursday": ["", "10G", "8B", "", "10B", "9G", ""],
+      "Friday": ["", "10B", "8A", "10G", "", "8B", "10G"]
+    }
+  },
+  {
+    name: "SMR",
+    timetable: {
+      "Monday": ["8A", "", "9B", "9A", "8C", "", "8B"],
+      "Tuesday": ["9A", "", "8A", "8B", "8C", "", "9B"],
+      "Wednesday": ["", "9A", "8C", "8B", "", "9B", "8A"],
+      "Thursday": ["", "9B", "9A", "8A", "", "8C", "8B"],
+      "Friday": ["", "8C", "8B", "9A", "", "8A", "9B"]
+    }
+  },
+  {
+    name: "CPS",
+    timetable: {
+      "Monday": ["", "10A", "9D", "10B", "", "", "9E"],
+      "Tuesday": ["10A", "10A", "", "10B", "", "9D", "9E"],
+      "Wednesday": ["10C", "10C", "9E", "", "9D", "10B", ""],
+      "Thursday": ["", "10B", "10A", "9D", "", "10C", "9E"],
+      "Friday": ["", "9E", "9D", "", "10B", "", "10A"]
+    }
+  },
+  {
+    name: "SML",
+    timetable: {
+      "Monday": ["", "", "8A", "9F", "", "", ""],
+      "Tuesday": ["", "8H", "9B", "8E", "", "8F", "8D"],
+      "Wednesday": ["", "9E", "8B", "8C", "", "9A", "9G"],
+      "Thursday": ["", "9I", "8I", "8I", "", "8G", "9C"],
+      "Friday": ["", "8I", "8J", "", "9D", "9H", "8I"]
+    }
+  },
+  {
+    name: "KYA",
+    timetable: {
+      "Monday": ["", "9B", "8B", "", "", "8G", "8E"],
+      "Tuesday": ["", "9I", "9E", "8A", "", "", "9G"],
+      "Wednesday": ["", "8I", "9D", "", "8A", "8A", "9A"],
+      "Thursday": ["", "9F", "", "", "8C", "8J", "8A"],
+      "Friday": ["", "9C", "8D", "8F", "", "8H", "9H"]
+    }
+  },
+  {
+    name: "PET",
+    timetable: {
+      "Monday": ["", "10F", "8C, 8D", "8A, 8B", "", "10G", "10A"],
+      "Tuesday": ["", "10D", "9F", "", "10C", "9H", "8I, 8J"],
+      "Wednesday": ["", "10B", "9I", "10E", "", "9E", "9C"],
+      "Thursday": ["", "", "9D", "10H", "", "", "9G"],
+      "Friday": ["", "8G, 8H", "8E, 8F", "9B", "", "9A", ""]
+    }
+  },
+  {
+    name: "E6",
+    timetable: {
+      "Monday": ["", "8F", "9H", "9H", "", "9D", "8D"],
+      "Tuesday": ["", "9E", "8D", "8F", "", "9F", "9H"],
+      "Wednesday": ["8F", "9F", "", "8D", "9E", "9D", ""],
+      "Thursday": ["9F", "", "8F", "8D", "9E", "", "9D"],
+      "Friday": ["9F", "9D", "", "9E", "", "8F", "8D"]
+    }
+  },
+  {
+    name: "B4",
+    timetable: {
+      "Monday": ["8B", "8B", "", "", "9F", "8D", "8C"],
+      "Tuesday": ["8E", "8E", "", "9C", "9F", "", "9D"],
+      "Wednesday": ["9D", "8E", "8F", "", "8C", "8D", ""],
+      "Thursday": ["8C", "8C", "", "", "8D", "8B", "8F"],
+      "Friday": ["8C", "8E", "", "", "8D", "8D", "9C"]
+    }
+  },
+  {
+    name: "SS6",
+    timetable: {
+      "Monday": ["", "8E", "", "9C", "9D", "9F", ""],
+      "Tuesday": ["9F", "", "9C", "8D", "9D", "", "8E"],
+      "Wednesday": ["", "9D", "9F", "8E", "", "9C", "8D"],
+      "Thursday": ["9D", "8D", "", "8E", "9C", "9F", ""],
+      "Friday": ["", "8D", "9C", "9D", "", "9F", ""]
+    }
+  },
+  {
+    name: "H4",
+    timetable: {
+      "Monday": ["8D", "", "", "", "8E", "", "8F"],
+      "Tuesday": ["8D", "", "", "", "", "", ""],
+      "Wednesday": ["8E", "", "", "", "", "", ""],
+      "Thursday": ["8F", "", "", "", "", "", "8D"],
+      "Friday": ["8E", "", "", "", "", "", "8F"]
+    }
+  }
 ];
-
 
 // Helper: Count weekly periods for a teacher
 const getWeeklyPeriodsCount = (timetable) => {
@@ -1109,6 +1108,22 @@ const SubstitutionGenerator = ({
     return codes;
   }, [definedClasses]);
 
+  // Track both absent IDs and absent Teacher Names so an absent teacher is NEVER suggested or assigned
+  const absentIdSet = useMemo(() => new Set(absentIds), [absentIds]);
+  const absentNameSet = useMemo(() => {
+    const names = new Set();
+    absentIds.forEach(id => {
+      const t = teachers.find(tr => tr.id === id);
+      if (t?.name) names.add(t.name.trim().toUpperCase());
+    });
+    return names;
+  }, [absentIds, teachers]);
+
+  const isTeacherAbsent = (teacher) => {
+    if (!teacher) return true;
+    return absentIdSet.has(teacher.id) || absentNameSet.has((teacher.name || '').trim().toUpperCase());
+  };
+
   const extractClassCodes = (entry) => {
     if (!entry) return [];
     const upperEntry = entry.toUpperCase();
@@ -1161,7 +1176,9 @@ const SubstitutionGenerator = ({
           const generalMatches = [];
 
           teachers.forEach(t => {
-            if (t.id === absentId || absentIds.includes(t.id)) return;
+            // Strictly exclude any teacher who is marked absent (by ID or by Name)
+            if (t.id === absentId || isTeacherAbsent(t)) return;
+
             const tSchedule = t.timetable?.[selectedDay];
             const tActivity = tSchedule?.[periodIndex];
             const isFree = !tActivity || tActivity.trim() === '';
@@ -1201,13 +1218,46 @@ const SubstitutionGenerator = ({
       }
       return a.period - b.period;
     });
-  }, [selectedDay, absentIds, teachers, validClassCodes]);
+  }, [selectedDay, absentIds, teachers, validClassCodes, absentIdSet, absentNameSet]);
+
+  // Automatically purge any invalid or newly-absent teacher from assignments
+  useEffect(() => {
+    if (PrintMode) return;
+    setAssignments(prev => {
+      let changed = false;
+      const next = { ...prev };
+
+      Object.entries(next).forEach(([slotId, assignedTid]) => {
+        const slotItem = substitutionData.find(d => d.id === slotId);
+        const assignedTeacherObj = teachers.find(t => t.id === assignedTid);
+
+        // Remove if slot no longer exists, teacher is marked absent, or teacher is not free/valid for this slot
+        if (
+          !slotItem ||
+          !assignedTeacherObj ||
+          isTeacherAbsent(assignedTeacherObj) ||
+          !slotItem.replacements.some(r => r.id === assignedTid)
+        ) {
+          delete next[slotId];
+          changed = true;
+        }
+      });
+
+      return changed ? next : prev;
+    });
+  }, [substitutionData, absentIds, teachers, PrintMode, setAssignments]);
 
   const isTeacherBookedInPeriod = (teacherId, period, currentSlotId) => {
+    const targetTeacher = teachers.find(t => t.id === teacherId);
+    const targetName = targetTeacher?.name?.trim().toUpperCase();
+
     for (const [slotId, assignedTeacherId] of Object.entries(assignments)) {
+      if (slotId === currentSlotId || !assignedTeacherId) continue;
       const assignedItem = substitutionData.find(item => item.id === slotId);
       if (assignedItem && assignedItem.period === period) {
-        if (slotId !== currentSlotId && assignedTeacherId === teacherId) {
+        if (assignedTeacherId === teacherId) return true;
+        const assignedTeacher = teachers.find(t => t.id === assignedTeacherId);
+        if (targetName && assignedTeacher?.name?.trim().toUpperCase() === targetName) {
           return true;
         }
       }
@@ -1215,38 +1265,65 @@ const SubstitutionGenerator = ({
     return false;
   };
 
-  // Smart Auto-Assign Substitutes
+  // Smart Auto-Assign Substitutes (Strictly excludes absent teachers & validates existing slots)
   const handleAutoAssign = () => {
-    const nextAssignments = { ...assignments };
+    const nextAssignments = {};
     const subCountTracker = {};
 
-    // Count existing manual assignments
-    Object.values(nextAssignments).forEach(tid => {
-      if (tid) subCountTracker[tid] = (subCountTracker[tid] || 0) + 1;
+    // 1. Keep only valid manual assignments where the teacher is NOT absent, IS free in that slot, and NOT double-booked
+    substitutionData.forEach(item => {
+      const existingTid = assignments[item.id];
+      if (!existingTid) return;
+
+      const existingTeacher = teachers.find(t => t.id === existingTid);
+      const isValidReplacement = item.replacements.some(r => r.id === existingTid);
+
+      if (existingTeacher && !isTeacherAbsent(existingTeacher) && isValidReplacement) {
+        const hasPeriodConflict = Object.entries(nextAssignments).some(([otherSlotId, otherTid]) => {
+          const otherItem = substitutionData.find(d => d.id === otherSlotId);
+          return otherItem && otherItem.period === item.period && otherTid === existingTid;
+        });
+
+        if (!hasPeriodConflict) {
+          nextAssignments[item.id] = existingTid;
+          subCountTracker[existingTid] = (subCountTracker[existingTid] || 0) + 1;
+        }
+      }
     });
 
+    // 2. Fill all remaining unassigned slots with non-absent, non-conflicting free teachers
     substitutionData.forEach(item => {
-      if (nextAssignments[item.id]) return; // Keep existing selection
+      if (nextAssignments[item.id]) return;
 
       const available = item.replacements.filter(cand => {
-        // Check period conflict in nextAssignments
+        if (isTeacherAbsent(cand)) return false;
+
+        // Check period conflict in nextAssignments (by ID and Name)
         for (const [slotId, assignedTid] of Object.entries(nextAssignments)) {
           const otherItem = substitutionData.find(d => d.id === slotId);
-          if (otherItem && otherItem.period === item.period && assignedTid === cand.id) {
-            return false;
+          if (otherItem && otherItem.period === item.period) {
+            if (assignedTid === cand.id) return false;
+            const assignedTeacher = teachers.find(t => t.id === assignedTid);
+            if (
+              assignedTeacher?.name &&
+              cand.name &&
+              assignedTeacher.name.trim().toUpperCase() === cand.name.trim().toUpperCase()
+            ) {
+              return false;
+            }
           }
         }
         return true;
       });
 
       if (available.length > 0) {
-        // Sort: prefer strict matches, then fewer assigned subs today, then more free periods
+        // Prefer strict class matches, then fewer assigned substitutions today, then more free periods today
         available.sort((a, b) => {
           if (a.type !== b.type) return a.type === 'strict' ? -1 : 1;
           const subsA = subCountTracker[a.id] || 0;
           const subsB = subCountTracker[b.id] || 0;
           if (subsA !== subsB) return subsA - subsB;
-          return b.freePeriodsToday - a.freePeriodsToday;
+          return b.freePeriodsToday - a.freePeriodsToday || a.name.localeCompare(b.name);
         });
 
         const chosen = available[0];
@@ -1290,7 +1367,10 @@ const SubstitutionGenerator = ({
     }, 150);
   };
 
-  const assignedCount = substitutionData.filter(item => assignments[item.id]).length;
+  const assignedCount = substitutionData.filter(item => {
+    const tid = assignments[item.id];
+    return tid && item.replacements.some(r => r.id === tid);
+  }).length;
 
   // Print Layout (Optimized for both Desktop and Mobile PDF generation)
   if (PrintMode) {
@@ -1349,13 +1429,10 @@ const SubstitutionGenerator = ({
                     if (item) {
                       content = item.classInfo;
                       const assignedId = assignments[slotId];
-                      const replacementInfo = item.replacements.find(r => r.id === assignedId);
+                      const replacementInfo = item.replacements.find(r => r.id === assignedId && !isTeacherAbsent(r));
                       if (replacementInfo) {
                         subName = replacementInfo.name;
                         subType = replacementInfo.type;
-                      } else if (assignedId) {
-                        const t = teachers.find(tr => tr.id === assignedId);
-                        subName = t?.name || "";
                       }
                     }
                     
@@ -1588,8 +1665,9 @@ const SubstitutionGenerator = ({
                 {/* Slot Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {substitutionData.map((item) => {
-                    const assignedTeacherId = assignments[item.id] || "";
-                    const assignedRep = item.replacements.find(r => r.id === assignedTeacherId);
+                    const rawAssignedId = assignments[item.id] || "";
+                    const assignedRep = item.replacements.find(r => r.id === rawAssignedId && !isTeacherAbsent(r));
+                    const assignedTeacherId = assignedRep ? rawAssignedId : "";
 
                     return (
                       <div 
@@ -1640,7 +1718,7 @@ const SubstitutionGenerator = ({
                           >
                             <option value="">-- Select Substitute --</option>
                             <optgroup label="★ Teaches This Class (Preferred)">
-                              {item.replacements.filter(r => r.type === 'strict').map(r => {
+                              {item.replacements.filter(r => r.type === 'strict' && !isTeacherAbsent(r)).map(r => {
                                 const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
                                 return (
                                   <option key={r.id} value={r.id} disabled={isBooked}>
@@ -1650,7 +1728,7 @@ const SubstitutionGenerator = ({
                               })}
                             </optgroup>
                             <optgroup label="Other Free Teachers">
-                              {item.replacements.filter(r => r.type === 'general').map(r => {
+                              {item.replacements.filter(r => r.type === 'general' && !isTeacherAbsent(r)).map(r => {
                                 const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
                                 return (
                                   <option key={r.id} value={r.id} disabled={isBooked}>
@@ -1708,28 +1786,40 @@ export default function App() {
     link.href = clockSvg;
   }, []);
 
+  // Clean up assignments whenever a teacher is marked OR unmarked absent
   const toggleAbsent = (id) => {
     setAbsentIds(prev => {
       const exists = prev.includes(id);
-      if (exists) {
-        setAssignments(curr => {
-          const next = { ...curr };
-          Object.keys(next).forEach(key => {
-            if (key.startsWith(`${id}-`) || next[key] === id) {
-              delete next[key];
-            }
-          });
-          return next;
+      const nextAbsentIds = exists ? prev.filter(pid => pid !== id) : [...prev, id];
+      const nextAbsentSet = new Set(nextAbsentIds);
+
+      setAssignments(curr => {
+        const next = { ...curr };
+        Object.keys(next).forEach(key => {
+          // Remove slots belonging to this teacher OR slots where this teacher (or any absent teacher) was assigned as substitute
+          if (
+            key.startsWith(`${id}-`) ||
+            next[key] === id ||
+            nextAbsentSet.has(next[key])
+          ) {
+            delete next[key];
+          }
         });
-        return prev.filter(pid => pid !== id);
-      } else {
-        return [...prev, id];
-      }
+        return next;
+      });
+
+      return nextAbsentIds;
     });
   };
 
   const clearAbsent = () => {
     setAbsentIds([]);
+    setAssignments({});
+  };
+
+  // Switching the day resets day-specific substitute assignments
+  const handleSelectDay = (day) => {
+    setSelectedDay(day);
     setAssignments({});
   };
 
@@ -2149,7 +2239,7 @@ export default function App() {
                 teachers={teachers} 
                 definedClasses={classes}
                 selectedDay={selectedDay}
-                setSelectedDay={setSelectedDay}
+                setSelectedDay={handleSelectDay}
                 absentIds={absentIds}
                 toggleAbsent={toggleAbsent}
                 clearAbsent={clearAbsent}
@@ -2168,6 +2258,7 @@ export default function App() {
           teachers={teachers} 
           definedClasses={classes}
           selectedDay={selectedDay}
+          setSelectedDay={() => {}}
           absentIds={absentIds}
           toggleAbsent={() => {}}
           clearAbsent={() => {}}
