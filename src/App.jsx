@@ -40,7 +40,12 @@ import {
   Loader2,
   Sparkles,
   RotateCcw,
-  UserCheck
+  UserCheck,
+  Copy,
+  Check,
+  Lock,
+  Unlock,
+  Info
 } from 'lucide-react';
 
 // --- Firebase Configuration ---
@@ -59,9 +64,12 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = "school-scheduler-v1";
 
-// --- Constants ---
+// --- Constants & Security ---
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const PERIODS = [1, 2, 3, 4, 5, 6, 7];
+const ADMIN_PIN = "1234"; // 4-digit PIN required to edit timetables, classes, or Sync DB
+const STORAGE_KEY = "ghss_pookkottur_sub_state_v1";
+const ADMIN_SESSION_KEY = "ghss_pookkottur_admin_unlocked";
 
 // --- DEFAULT DATA ---
 const INITIAL_CLASSES = [
@@ -505,7 +513,122 @@ const getWeeklyPeriodsCount = (timetable) => {
   return count;
 };
 
+// Helper: Load persisted daily substitution state from localStorage
+const loadPersistedSubState = () => {
+  const todayStr = new Date().toLocaleDateString('en-GB');
+  const todayIdx = new Date().getDay();
+  const defaultDay = DAYS[todayIdx - 1] || 'Monday';
+
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.date === todayStr) {
+        return {
+          selectedDay: DAYS.includes(parsed.selectedDay) ? parsed.selectedDay : defaultDay,
+          absentIds: Array.isArray(parsed.absentIds) ? parsed.absentIds : [],
+          assignments: parsed.assignments && typeof parsed.assignments === 'object' ? parsed.assignments : {}
+        };
+      }
+    }
+  } catch (e) {
+    console.warn("Could not read saved state from localStorage", e);
+  }
+
+  return {
+    selectedDay: defaultDay,
+    absentIds: [],
+    assignments: {}
+  };
+};
+
 // --- Components ---
+
+// 0. Admin PIN Prompt Modal
+const PinPromptModal = ({ isOpen, actionLabel, onClose, onSuccess }) => {
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setPin('');
+      setError(false);
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (pin === ADMIN_PIN) {
+      setError(false);
+      onSuccess();
+    } else {
+      setError(true);
+      setPin('');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 print:hidden">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm border border-slate-200 overflow-hidden">
+        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-amber-100 text-amber-700">
+              <Lock className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-slate-800">Admin PIN Required</h3>
+              <p className="text-[11px] text-slate-500">{actionLabel || 'Unlock database editing'}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-slate-200 rounded-full text-slate-500">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-4 space-y-3">
+          <div>
+            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
+              Enter 4-Digit Admin PIN
+            </label>
+            <input
+              type="password"
+              inputMode="numeric"
+              autoFocus
+              maxLength={8}
+              placeholder="••••"
+              value={pin}
+              onChange={(e) => { setPin(e.target.value); setError(false); }}
+              className={`w-full px-3 py-2 text-center tracking-widest text-lg font-bold border rounded-lg outline-none focus:ring-2 ${
+                error ? 'border-red-400 focus:ring-red-400 bg-red-50' : 'border-slate-300 focus:ring-blue-500'
+              }`}
+            />
+            {error && (
+              <p className="text-xs text-red-600 font-medium mt-1 text-center">
+                Incorrect PIN. Please try again.
+              </p>
+            )}
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3.5 py-2 text-slate-600 font-medium text-xs hover:bg-slate-100 rounded-lg"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-sm"
+            >
+              Unlock &amp; Continue
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 // 1. Class Directory Component
 const ClassDirectory = ({ classes, onAddClass, onDeleteClass, onUpdateClass }) => {
@@ -862,7 +985,7 @@ const ClassSelectorModal = ({ value, definedClasses, onClose, onSave }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh] border border-slate-200">
         <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
           <div>
@@ -893,7 +1016,7 @@ const ClassSelectorModal = ({ value, definedClasses, onClose, onSave }) => {
                         className={`
                           px-3.5 py-2 rounded-lg text-xs font-bold border transition-all
                           ${isSelected 
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs ring-2 ring-blue-200' 
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-sm ring-2 ring-blue-200' 
                             : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-slate-50'
                           }
                         `}
@@ -935,7 +1058,7 @@ const ClassSelectorModal = ({ value, definedClasses, onClose, onSave }) => {
             <button onClick={onClose} className="px-4 py-2 text-slate-600 font-medium text-sm hover:bg-slate-200 rounded-lg">
               Cancel
             </button>
-            <button onClick={handleSave} className="px-5 py-2 bg-blue-600 text-white font-medium text-sm rounded-lg hover:bg-blue-700 shadow-xs">
+            <button onClick={handleSave} className="px-5 py-2 bg-blue-600 text-white font-medium text-sm rounded-lg hover:bg-blue-700 shadow-sm">
               Apply
             </button>
           </div>
@@ -972,8 +1095,10 @@ const TimetableEditor = ({ teacher, onUpdateTimetable, onClose, definedClasses }
 
   const handleSave = async () => {
     setIsSaving(true);
-    await onUpdateTimetable(teacher.id, schedule);
-    setHasChanges(false);
+    const savedOk = await onUpdateTimetable(teacher.id, schedule);
+    if (savedOk !== false) {
+      setHasChanges(false);
+    }
     setIsSaving(false);
   };
 
@@ -1010,7 +1135,7 @@ const TimetableEditor = ({ teacher, onUpdateTimetable, onClose, definedClasses }
           <button 
             onClick={handleSave} 
             disabled={isSaving || !hasChanges}
-            className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-xs transition-all ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm transition-all ${
               hasChanges 
                 ? 'bg-blue-600 hover:bg-blue-700 text-white' 
                 : 'bg-slate-200 text-slate-500 cursor-not-allowed'
@@ -1052,7 +1177,7 @@ const TimetableEditor = ({ teacher, onUpdateTimetable, onClose, definedClasses }
                     className={`
                       relative w-full h-16 p-1.5 text-xs text-center border rounded-xl cursor-pointer transition-all flex items-center justify-center group
                       ${cellValue
-                        ? 'bg-blue-50/90 border-blue-200 text-blue-900 font-bold hover:bg-blue-100 hover:border-blue-300 shadow-2xs' 
+                        ? 'bg-blue-50/90 border-blue-200 text-blue-900 font-bold hover:bg-blue-100 hover:border-blue-300 shadow-sm' 
                         : 'bg-white border-slate-200/80 text-slate-300 hover:border-blue-300 hover:bg-slate-50'
                       }
                     `}
@@ -1097,6 +1222,7 @@ const SubstitutionGenerator = ({
   setAssignments 
 }) => {
   const [staffSearch, setStaffSearch] = useState('');
+  const [copiedWhatsApp, setCopiedWhatsApp] = useState(false);
 
   const validClassCodes = useMemo(() => {
     const codes = new Set();
@@ -1174,14 +1300,28 @@ const SubstitutionGenerator = ({
           const targetCodes = extractClassCodes(subject);
           const strictMatches = [];
           const generalMatches = [];
+          const presentCoTeachers = [];
 
           teachers.forEach(t => {
-            // Strictly exclude any teacher who is marked absent (by ID or by Name)
-            if (t.id === absentId || isTeacherAbsent(t)) return;
+            if (t.id === absentId) return;
 
             const tSchedule = t.timetable?.[selectedDay];
             const tActivity = tSchedule?.[periodIndex];
             const isFree = !tActivity || tActivity.trim() === '';
+
+            // Detect shared/combined class co-teachers who are present in the same period
+            if (!isFree && !isTeacherAbsent(t)) {
+              const otherCodes = extractClassCodes(tActivity);
+              const sharesClass =
+                (targetCodes.length > 0 && otherCodes.some(c => targetCodes.includes(c))) ||
+                tActivity.trim().toUpperCase() === subject.trim().toUpperCase();
+              if (sharesClass) {
+                presentCoTeachers.push(t.name);
+              }
+            }
+
+            // Strictly exclude any teacher who is marked absent (by ID or by Name)
+            if (isTeacherAbsent(t)) return;
             
             if (isFree) {
               const dailyLoad = getTeacherDailyLoad(t);
@@ -1206,6 +1346,7 @@ const SubstitutionGenerator = ({
             targetCodes,
             absentTeacherName: absentTeacher.name,
             absentTeacherId: absentId,
+            presentCoTeachers: presentCoTeachers.sort(),
             replacements: [...strictMatches, ...generalMatches]
           });
         }
@@ -1220,6 +1361,18 @@ const SubstitutionGenerator = ({
     });
   }, [selectedDay, absentIds, teachers, validClassCodes, absentIdSet, absentNameSet]);
 
+  // Live count of how many substitutions each teacher is currently assigned today
+  const assignedSubCounts = useMemo(() => {
+    const counts = {};
+    substitutionData.forEach(item => {
+      const tid = assignments[item.id];
+      if (tid && item.replacements.some(r => r.id === tid && !isTeacherAbsent(r))) {
+        counts[tid] = (counts[tid] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [assignments, substitutionData, absentIdSet, absentNameSet]);
+
   // Automatically purge any invalid or newly-absent teacher from assignments
   useEffect(() => {
     if (PrintMode) return;
@@ -1231,7 +1384,6 @@ const SubstitutionGenerator = ({
         const slotItem = substitutionData.find(d => d.id === slotId);
         const assignedTeacherObj = teachers.find(t => t.id === assignedTid);
 
-        // Remove if slot no longer exists, teacher is marked absent, or teacher is not free/valid for this slot
         if (
           !slotItem ||
           !assignedTeacherObj ||
@@ -1335,6 +1487,46 @@ const SubstitutionGenerator = ({
     setAssignments(nextAssignments);
   };
 
+  // Copy formatted substitution summary for WhatsApp
+  const handleCopyWhatsApp = async () => {
+    if (substitutionData.length === 0) return;
+    const dateStr = new Date().toLocaleDateString('en-GB');
+    const absentNames = [...absentIds]
+      .map(id => teachers.find(t => t.id === id)?.name)
+      .filter(Boolean)
+      .sort()
+      .join(', ');
+
+    const lines = [
+      `*GHSS POOKKOTTUR — SUBSTITUTION CHART*`,
+      `📅 *${selectedDay.toUpperCase()}* (${dateStr})`,
+      `🚫 *Absent Staff:* ${absentNames}`,
+      `────────────────────`
+    ];
+
+    PERIODS.forEach(period => {
+      const periodItems = substitutionData.filter(item => item.period === period);
+      if (periodItems.length > 0) {
+        lines.push(`\n*PERIOD ${period}*`);
+        periodItems.forEach(item => {
+          const assignedId = assignments[item.id];
+          const rep = item.replacements.find(r => r.id === assignedId && !isTeacherAbsent(r));
+          const subLabel = rep ? `*${rep.name}*` : `_Unassigned_`;
+          lines.push(`• Class *${item.classInfo}*: ${subLabel} _(for ${item.absentTeacherName})_`);
+        });
+      }
+    });
+
+    const messageText = lines.join('\n');
+    try {
+      await navigator.clipboard.writeText(messageText);
+      setCopiedWhatsApp(true);
+      setTimeout(() => setCopiedWhatsApp(false), 2500);
+    } catch (err) {
+      console.error("Clipboard copy failed", err);
+    }
+  };
+
   const filteredTeachers = useMemo(() => {
     return [...teachers]
       .filter(t => t.name.toLowerCase().includes(staffSearch.toLowerCase()))
@@ -1369,8 +1561,15 @@ const SubstitutionGenerator = ({
 
   const assignedCount = substitutionData.filter(item => {
     const tid = assignments[item.id];
-    return tid && item.replacements.some(r => r.id === tid);
+    return tid && item.replacements.some(r => r.id === tid && !isTeacherAbsent(r));
   }).length;
+
+  // Format option text with live assigned sub count
+  const formatCandidateOption = (r, isBooked) => {
+    const subCount = assignedSubCounts[r.id] || 0;
+    const subTag = subCount > 0 ? ` • ${subCount} sub${subCount > 1 ? 's' : ''} assigned` : '';
+    return `${r.name} (${r.freePeriodsToday} free today${subTag})${isBooked ? ' — [Busy]' : ''}`;
+  };
 
   // Print Layout (Optimized for both Desktop and Mobile PDF generation)
   if (PrintMode) {
@@ -1493,10 +1692,22 @@ const SubstitutionGenerator = ({
               <>
                 <button 
                   onClick={handleAutoAssign}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg font-medium flex items-center gap-1.5 text-xs shadow-xs transition-all"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg font-medium flex items-center gap-1.5 text-xs shadow-sm transition-all"
                   title="Automatically assign best available substitutes"
                 >
                   <Sparkles className="w-4 h-4" /> Auto-Assign
+                </button>
+                <button 
+                  onClick={handleCopyWhatsApp}
+                  className={`px-3.5 py-2 rounded-lg font-medium flex items-center gap-1.5 text-xs shadow-sm transition-all ${
+                    copiedWhatsApp 
+                      ? 'bg-green-600 text-white' 
+                      : 'bg-slate-700 hover:bg-slate-600 text-slate-100'
+                  }`}
+                  title="Copy formatted substitution chart for WhatsApp"
+                >
+                  {copiedWhatsApp ? <Check className="w-4 h-4" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedWhatsApp ? 'Copied!' : 'Copy WhatsApp'}
                 </button>
                 <button 
                   onClick={() => setAssignments({})}
@@ -1510,7 +1721,7 @@ const SubstitutionGenerator = ({
             <button 
               onClick={handlePrint}
               disabled={absentIds.length === 0}
-              className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-xs shadow-xs transition-all ${
+              className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 text-xs shadow-sm transition-all ${
                 absentIds.length === 0 
                   ? 'bg-slate-700 text-slate-500 cursor-not-allowed' 
                   : 'bg-blue-600 hover:bg-blue-500 text-white'
@@ -1535,7 +1746,7 @@ const SubstitutionGenerator = ({
                     onClick={() => setSelectedDay(d)}
                     className={`py-1.5 rounded-md text-xs font-bold transition-all ${
                       selectedDay === d 
-                        ? 'bg-white text-blue-600 shadow-xs' 
+                        ? 'bg-white text-blue-600 shadow-sm' 
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
@@ -1582,13 +1793,14 @@ const SubstitutionGenerator = ({
               {filteredTeachers.map(t => {
                 const isAbsent = absentIds.includes(t.id);
                 const todayClassesCount = getTeacherDailyLoad(t);
+                const subCountToday = assignedSubCounts[t.id] || 0;
                 return (
                   <label 
                     key={t.id} 
                     className={`
                       flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all
                       ${isAbsent 
-                        ? 'bg-red-50 border-red-200 shadow-2xs' 
+                        ? 'bg-red-50 border-red-200 shadow-sm' 
                         : 'bg-white border-slate-200/80 hover:border-blue-300'
                       }
                     `}
@@ -1610,11 +1822,18 @@ const SubstitutionGenerator = ({
                         {t.name}
                       </span>
                     </div>
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
-                      isAbsent ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'
-                    }`}>
-                      {todayClassesCount} pds today
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {!isAbsent && subCountToday > 0 && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700">
+                          +{subCountToday} sub
+                        </span>
+                      )}
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
+                        isAbsent ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {todayClassesCount} pds today
+                      </span>
+                    </div>
                   </label>
                 );
               })}
@@ -1674,8 +1893,8 @@ const SubstitutionGenerator = ({
                         key={item.id} 
                         className={`rounded-xl border transition-all overflow-hidden ${
                           assignedTeacherId 
-                            ? 'border-emerald-200 bg-emerald-50/20 shadow-2xs' 
-                            : 'border-slate-200 bg-white shadow-2xs'
+                            ? 'border-emerald-200 bg-emerald-50/20 shadow-sm' 
+                            : 'border-slate-200 bg-white shadow-sm'
                         }`}
                       >
                         <div className="bg-slate-50/80 px-3.5 py-2.5 border-b border-slate-100 flex justify-between items-center gap-2">
@@ -1692,52 +1911,63 @@ const SubstitutionGenerator = ({
                           </span>
                         </div>
 
-                        <div className="p-3.5">
-                          <div className="flex items-center justify-between mb-1.5">
-                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                              Substitute Teacher
-                            </label>
-                            {assignedRep && (
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                assignedRep.type === 'strict' 
-                                  ? 'bg-emerald-100 text-emerald-700' 
-                                  : 'bg-orange-100 text-orange-600'
-                              }`}>
-                                {assignedRep.type === 'strict' ? 'Class Teacher Match' : 'General Free Staff'}
+                        <div className="p-3.5 space-y-2">
+                          {item.presentCoTeachers && item.presentCoTeachers.length > 0 && (
+                            <div className="flex items-center gap-1.5 text-[11px] font-medium bg-blue-50 text-blue-800 px-2.5 py-1 rounded-lg border border-blue-200">
+                              <Info className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                              <span>
+                                Shared Batch — Co-Teacher Present: <strong>{item.presentCoTeachers.join(', ')}</strong>
                               </span>
-                            )}
+                            </div>
+                          )}
+
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                                Substitute Teacher
+                              </label>
+                              {assignedRep && (
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                  assignedRep.type === 'strict' 
+                                    ? 'bg-emerald-100 text-emerald-700' 
+                                    : 'bg-orange-100 text-orange-600'
+                                }`}>
+                                  {assignedRep.type === 'strict' ? 'Class Teacher Match' : 'General Free Staff'}
+                                </span>
+                              )}
+                            </div>
+                            <select 
+                              className={`w-full p-2 border rounded-lg text-sm font-medium outline-none transition-all ${
+                                assignedTeacherId 
+                                  ? 'border-emerald-300 bg-white text-slate-800 font-bold' 
+                                  : 'border-slate-300 bg-white text-slate-700 focus:ring-2 focus:ring-blue-500'
+                              }`}
+                              value={assignedTeacherId}
+                              onChange={(e) => setAssignments(prev => ({ ...prev, [item.id]: e.target.value }))}
+                            >
+                              <option value="">-- Select Substitute --</option>
+                              <optgroup label="★ Teaches This Class (Preferred)">
+                                {item.replacements.filter(r => r.type === 'strict' && !isTeacherAbsent(r)).map(r => {
+                                  const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
+                                  return (
+                                    <option key={r.id} value={r.id} disabled={isBooked}>
+                                      {formatCandidateOption(r, isBooked)}
+                                    </option>
+                                  );
+                                })}
+                              </optgroup>
+                              <optgroup label="Other Free Teachers">
+                                {item.replacements.filter(r => r.type === 'general' && !isTeacherAbsent(r)).map(r => {
+                                  const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
+                                  return (
+                                    <option key={r.id} value={r.id} disabled={isBooked}>
+                                      {formatCandidateOption(r, isBooked)}
+                                    </option>
+                                  );
+                                })}
+                              </optgroup>
+                            </select>
                           </div>
-                          <select 
-                            className={`w-full p-2 border rounded-lg text-sm font-medium outline-none transition-all ${
-                              assignedTeacherId 
-                                ? 'border-emerald-300 bg-white text-slate-800 font-bold' 
-                                : 'border-slate-300 bg-white text-slate-700 focus:ring-2 focus:ring-blue-500'
-                            }`}
-                            value={assignedTeacherId}
-                            onChange={(e) => setAssignments(prev => ({ ...prev, [item.id]: e.target.value }))}
-                          >
-                            <option value="">-- Select Substitute --</option>
-                            <optgroup label="★ Teaches This Class (Preferred)">
-                              {item.replacements.filter(r => r.type === 'strict' && !isTeacherAbsent(r)).map(r => {
-                                const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
-                                return (
-                                  <option key={r.id} value={r.id} disabled={isBooked}>
-                                    {r.name} ({r.freePeriodsToday} free today) {isBooked ? '— [Busy]' : ''}
-                                  </option>
-                                );
-                              })}
-                            </optgroup>
-                            <optgroup label="Other Free Teachers">
-                              {item.replacements.filter(r => r.type === 'general' && !isTeacherAbsent(r)).map(r => {
-                                const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
-                                return (
-                                  <option key={r.id} value={r.id} disabled={isBooked}>
-                                    {r.name} ({r.freePeriodsToday} free today) {isBooked ? '— [Busy]' : ''}
-                                  </option>
-                                );
-                              })}
-                            </optgroup>
-                          </select>
                         </div>
                       </div>
                     );
@@ -1764,13 +1994,73 @@ export default function App() {
   const [selectedTeacherId, setSelectedTeacherId] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Hoisted state for substitution logic
-  const [selectedDay, setSelectedDay] = useState(() => {
-    const todayIdx = new Date().getDay(); // 0=Sun, 1=Mon...
-    return DAYS[todayIdx - 1] || 'Monday';
+  // Admin PIN session state
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(() => {
+    try {
+      return sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true';
+    } catch {
+      return false;
+    }
   });
-  const [absentIds, setAbsentIds] = useState([]);
-  const [assignments, setAssignments] = useState({});
+  const [pinModal, setPinModal] = useState({ isOpen: false, actionLabel: '', onConfirm: null });
+
+  const requireAdminAuth = (actionLabel, callback) => {
+    if (isAdminUnlocked) {
+      return callback();
+    }
+    setPinModal({
+      isOpen: true,
+      actionLabel,
+      onConfirm: () => {
+        setIsAdminUnlocked(true);
+        try {
+          sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
+        } catch (e) {
+          console.warn(e);
+        }
+        setPinModal({ isOpen: false, actionLabel: '', onConfirm: null });
+        callback();
+      }
+    });
+    return false;
+  };
+
+  const toggleAdminLock = () => {
+    if (isAdminUnlocked) {
+      setIsAdminUnlocked(false);
+      try {
+        sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      } catch (e) {
+        console.warn(e);
+      }
+    } else {
+      requireAdminAuth('Unlock Admin Mode for Timetable & Database Edits', () => {});
+    }
+  };
+
+  // Hoisted state for substitution logic (persisted in localStorage for today)
+  const initialPersisted = useMemo(() => loadPersistedSubState(), []);
+  const [selectedDay, setSelectedDay] = useState(initialPersisted.selectedDay);
+  const [absentIds, setAbsentIds] = useState(initialPersisted.absentIds);
+  const [assignments, setAssignments] = useState(initialPersisted.assignments);
+
+  // Persist substitution state to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      const todayStr = new Date().toLocaleDateString('en-GB');
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          date: todayStr,
+          selectedDay,
+          absentIds,
+          assignments
+        })
+      );
+    } catch (e) {
+      console.warn("Could not save state to localStorage", e);
+    }
+  }, [selectedDay, absentIds, assignments]);
 
   // Set Clock Favicon and Page Title dynamically
   useEffect(() => {
@@ -1796,7 +2086,6 @@ export default function App() {
       setAssignments(curr => {
         const next = { ...curr };
         Object.keys(next).forEach(key => {
-          // Remove slots belonging to this teacher OR slots where this teacher (or any absent teacher) was assigned as substitute
           if (
             key.startsWith(`${id}-`) ||
             next[key] === id ||
@@ -1819,6 +2108,7 @@ export default function App() {
 
   // Switching the day resets day-specific substitute assignments
   const handleSelectDay = (day) => {
+    if (day === selectedDay) return;
     setSelectedDay(day);
     setAssignments({});
   };
@@ -1913,87 +2203,121 @@ export default function App() {
     return teachers.find(t => t.id === selectedTeacherId) || null;
   }, [teachers, selectedTeacherId]);
 
-  // --- ACTIONS (Add, Update, Delete) ---
-  const addTeacher = async (name) => {
+  // --- PROTECTED ACTIONS (Add, Update, Delete) ---
+  const addTeacher = (name) => {
     if (!user) return;
-    const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'teachers'), {
-      name,
-      timetable: {},
-      createdAt: serverTimestamp()
+    requireAdminAuth(`Add teacher "${name}"`, async () => {
+      const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'teachers'), {
+        name,
+        timetable: {},
+        createdAt: serverTimestamp()
+      });
+      setSelectedTeacherId(docRef.id);
     });
-    setSelectedTeacherId(docRef.id);
   };
 
-  const updateTimetable = async (teacherId, newTimetable) => {
+  const updateTimetable = (teacherId, newTimetable) => {
+    if (!user) return false;
+    return new Promise((resolve) => {
+      if (isAdminUnlocked) {
+        updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'teachers', teacherId), { timetable: newTimetable })
+          .then(() => resolve(true))
+          .catch(() => resolve(false));
+      } else {
+        setPinModal({
+          isOpen: true,
+          actionLabel: 'Save timetable changes',
+          onConfirm: async () => {
+            setIsAdminUnlocked(true);
+            try {
+              sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
+            } catch (e) {
+              console.warn(e);
+            }
+            setPinModal({ isOpen: false, actionLabel: '', onConfirm: null });
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'teachers', teacherId), { timetable: newTimetable });
+            resolve(true);
+          }
+        });
+      }
+    });
+  };
+
+  const deleteTeacher = (teacherId) => {
     if (!user) return;
-    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'teachers', teacherId), { timetable: newTimetable });
+    requireAdminAuth('Delete teacher from directory', async () => {
+      if (!confirm('Delete this teacher from the directory?')) return;
+      await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'teachers', teacherId));
+      if (selectedTeacherId === teacherId) setSelectedTeacherId(null);
+    });
   };
 
-  const deleteTeacher = async (teacherId) => {
-    if (!user) return;
-    if (!confirm('Delete this teacher from the directory?')) return;
-    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'teachers', teacherId));
-    if (selectedTeacherId === teacherId) setSelectedTeacherId(null);
-  };
-
-  const addClass = async (name) => {
+  const addClass = (name) => {
     if (!user) return;
     if (classes.some(c => c.name === name)) return alert("Class already exists");
-    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'classes'), {
-      name,
-      divisions: [],
-      createdAt: serverTimestamp()
+    requireAdminAuth(`Add Standard ${name}`, async () => {
+      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'classes'), {
+        name,
+        divisions: [],
+        createdAt: serverTimestamp()
+      });
     });
   };
 
-  const updateClass = async (classId, divisions) => {
+  const updateClass = (classId, divisions) => {
     if (!user) return;
-    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'classes', classId), { divisions });
+    requireAdminAuth('Modify class divisions', async () => {
+      await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'classes', classId), { divisions });
+    });
   };
 
-  const deleteClass = async (classId) => {
+  const deleteClass = (classId) => {
     if (!user) return;
-    if (!confirm('Delete this class standard?')) return;
-    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'classes', classId));
+    requireAdminAuth('Delete class standard', async () => {
+      if (!confirm('Delete this class standard?')) return;
+      await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'classes', classId));
+    });
   };
 
-  // FORCE RELOAD Action
-  const handleForceReloadDefaults = async () => {
+  // FORCE RELOAD Action (Protected by PIN)
+  const handleForceReloadDefaults = () => {
     if (!user) {
       alert("Please wait for authentication to finish.");
       return;
     }
-    if (!confirm("Reset database to the new GHSS Pookkottur default timetable (42 teachers & classes 8-10)? This will replace outdated teachers and classes.")) return;
-    
-    setImporting(true);
-    try {
-      const batch = writeBatch(db);
+    requireAdminAuth('Sync database with default GHSS Pookkottur timetable', async () => {
+      if (!confirm("Reset database to the new GHSS Pookkottur default timetable (42 teachers & classes 8-10)? This will replace outdated teachers and classes.")) return;
+      
+      setImporting(true);
+      try {
+        const batch = writeBatch(db);
 
-      const existingClassesSnap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'classes')));
-      existingClassesSnap.forEach(d => batch.delete(d.ref));
+        const existingClassesSnap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'classes')));
+        existingClassesSnap.forEach(d => batch.delete(d.ref));
 
-      const existingTeachersSnap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'teachers')));
-      existingTeachersSnap.forEach(d => batch.delete(d.ref));
+        const existingTeachersSnap = await getDocs(query(collection(db, 'artifacts', appId, 'public', 'data', 'teachers')));
+        existingTeachersSnap.forEach(d => batch.delete(d.ref));
 
-      for (const cls of INITIAL_CLASSES) {
-        const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'classes'));
-        batch.set(ref, { name: cls.name, divisions: cls.divisions, createdAt: serverTimestamp() });
+        for (const cls of INITIAL_CLASSES) {
+          const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'classes'));
+          batch.set(ref, { name: cls.name, divisions: cls.divisions, createdAt: serverTimestamp() });
+        }
+
+        for (const t of INITIAL_TEACHERS) {
+          const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'teachers'));
+          batch.set(ref, { name: t.name, timetable: t.timetable, createdAt: serverTimestamp() });
+        }
+
+        await batch.commit();
+        setSelectedTeacherId(null);
+        clearAbsent();
+        alert("Database successfully updated with the new GHSS Pookkottur classes and 42 teachers!");
+      } catch (e) {
+        console.error(e);
+        alert("Error updating database: " + e.message);
       }
-
-      for (const t of INITIAL_TEACHERS) {
-        const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'teachers'));
-        batch.set(ref, { name: t.name, timetable: t.timetable, createdAt: serverTimestamp() });
-      }
-
-      await batch.commit();
-      setSelectedTeacherId(null);
-      clearAbsent();
-      alert("Database successfully updated with the new GHSS Pookkottur classes and 42 teachers!");
-    } catch (e) {
-      console.error(e);
-      alert("Error updating database: " + e.message);
-    }
-    setImporting(false);
+      setImporting(false);
+    });
   };
 
   if (loading) return (
@@ -2082,7 +2406,7 @@ export default function App() {
         <header className="bg-slate-900 text-white shadow-md z-10 shrink-0">
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="bg-blue-600 p-2 rounded-xl text-white shadow-xs">
+              <div className="bg-blue-600 p-2 rounded-xl text-white shadow-sm">
                 <Clock className="w-5 h-5" />
               </div>
               <div>
@@ -2100,7 +2424,7 @@ export default function App() {
                 <button 
                   onClick={() => setActiveTab('substitute')}
                   className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    activeTab === 'substitute' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-300 hover:bg-slate-700'
+                    activeTab === 'substitute' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-300 hover:bg-slate-700'
                   }`}
                 >
                   Generate Subs
@@ -2108,7 +2432,7 @@ export default function App() {
                 <button 
                   onClick={() => setActiveTab('manage')}
                   className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    activeTab === 'manage' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-300 hover:bg-slate-700'
+                    activeTab === 'manage' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-300 hover:bg-slate-700'
                   }`}
                 >
                   Timetables ({teachers.length})
@@ -2116,12 +2440,24 @@ export default function App() {
                 <button 
                   onClick={() => setActiveTab('classes')}
                   className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    activeTab === 'classes' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-300 hover:bg-slate-700'
+                    activeTab === 'classes' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-300 hover:bg-slate-700'
                   }`}
                 >
                   Classes ({classes.length})
                 </button>
               </div>
+              <button
+                onClick={toggleAdminLock}
+                className={`px-3 py-2 rounded-xl transition-colors flex items-center gap-1.5 text-xs font-medium border ${
+                  isAdminUnlocked
+                    ? 'bg-emerald-900/40 border-emerald-600/50 text-emerald-300 hover:bg-emerald-900/60'
+                    : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+                }`}
+                title={isAdminUnlocked ? 'Admin Unlocked (Click to Lock)' : 'Admin Locked (Click to Unlock with PIN)'}
+              >
+                {isAdminUnlocked ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                <span>{isAdminUnlocked ? 'Unlocked' : 'Locked'}</span>
+              </button>
               <button 
                 onClick={handleForceReloadDefaults}
                 disabled={importing}
@@ -2165,8 +2501,15 @@ export default function App() {
                 Class Directory ({classes.length})
               </button>
               <button 
+                onClick={() => { toggleAdminLock(); setMobileMenuOpen(false); }}
+                className="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium text-amber-300 flex items-center gap-2 border-t border-slate-700 pt-3"
+              >
+                {isAdminUnlocked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                {isAdminUnlocked ? 'Lock Admin Edits' : 'Unlock Admin Edits (PIN)'}
+              </button>
+              <button 
                 onClick={() => { handleForceReloadDefaults(); setMobileMenuOpen(false); }}
-                className="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium text-blue-300 flex items-center gap-2 border-t border-slate-700 pt-3"
+                className="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium text-blue-300 flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" /> Sync Default Timetable DB
               </button>
@@ -2251,6 +2594,14 @@ export default function App() {
         </main>
       </div>
       
+      {/* --- ADMIN PIN MODAL --- */}
+      <PinPromptModal
+        isOpen={pinModal.isOpen}
+        actionLabel={pinModal.actionLabel}
+        onClose={() => setPinModal({ isOpen: false, actionLabel: '', onConfirm: null })}
+        onSuccess={() => pinModal.onConfirm && pinModal.onConfirm()}
+      />
+
       {/* --- PRINT LAYOUT (ONLY VISIBLE WHEN PRINTING) --- */}
       {activeTab === 'substitute' && (
         <SubstitutionGenerator 
