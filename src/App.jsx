@@ -44,8 +44,7 @@ import {
   Copy,
   Check,
   Lock,
-  Unlock,
-  Info
+  Unlock
 } from 'lucide-react';
 
 // --- Firebase Configuration ---
@@ -67,7 +66,7 @@ const appId = "school-scheduler-v1";
 // --- Constants & Security ---
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const PERIODS = [1, 2, 3, 4, 5, 6, 7];
-const ADMIN_PIN = "1234"; // 4-digit PIN required to edit timetables, classes, or Sync DB
+const ADMIN_PIN = "7777"; // 4-digit PIN required to edit timetables, classes, or Sync DB
 const STORAGE_KEY = "ghss_pookkottur_sub_state_v1";
 const ADMIN_SESSION_KEY = "ghss_pookkottur_admin_unlocked";
 
@@ -1300,28 +1299,14 @@ const SubstitutionGenerator = ({
           const targetCodes = extractClassCodes(subject);
           const strictMatches = [];
           const generalMatches = [];
-          const presentCoTeachers = [];
 
           teachers.forEach(t => {
-            if (t.id === absentId) return;
+            // Strictly exclude any teacher who is marked absent (by ID or by Name)
+            if (t.id === absentId || isTeacherAbsent(t)) return;
 
             const tSchedule = t.timetable?.[selectedDay];
             const tActivity = tSchedule?.[periodIndex];
             const isFree = !tActivity || tActivity.trim() === '';
-
-            // Detect shared/combined class co-teachers who are present in the same period
-            if (!isFree && !isTeacherAbsent(t)) {
-              const otherCodes = extractClassCodes(tActivity);
-              const sharesClass =
-                (targetCodes.length > 0 && otherCodes.some(c => targetCodes.includes(c))) ||
-                tActivity.trim().toUpperCase() === subject.trim().toUpperCase();
-              if (sharesClass) {
-                presentCoTeachers.push(t.name);
-              }
-            }
-
-            // Strictly exclude any teacher who is marked absent (by ID or by Name)
-            if (isTeacherAbsent(t)) return;
             
             if (isFree) {
               const dailyLoad = getTeacherDailyLoad(t);
@@ -1346,7 +1331,6 @@ const SubstitutionGenerator = ({
             targetCodes,
             absentTeacherName: absentTeacher.name,
             absentTeacherId: absentId,
-            presentCoTeachers: presentCoTeachers.sort(),
             replacements: [...strictMatches, ...generalMatches]
           });
         }
@@ -1911,63 +1895,52 @@ const SubstitutionGenerator = ({
                           </span>
                         </div>
 
-                        <div className="p-3.5 space-y-2">
-                          {item.presentCoTeachers && item.presentCoTeachers.length > 0 && (
-                            <div className="flex items-center gap-1.5 text-[11px] font-medium bg-blue-50 text-blue-800 px-2.5 py-1 rounded-lg border border-blue-200">
-                              <Info className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                              <span>
-                                Shared Batch — Co-Teacher Present: <strong>{item.presentCoTeachers.join(', ')}</strong>
+                        <div className="p-3.5">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                              Substitute Teacher
+                            </label>
+                            {assignedRep && (
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                assignedRep.type === 'strict' 
+                                  ? 'bg-emerald-100 text-emerald-700' 
+                                  : 'bg-orange-100 text-orange-600'
+                              }`}>
+                                {assignedRep.type === 'strict' ? 'Class Teacher Match' : 'General Free Staff'}
                               </span>
-                            </div>
-                          )}
-
-                          <div>
-                            <div className="flex items-center justify-between mb-1.5">
-                              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                                Substitute Teacher
-                              </label>
-                              {assignedRep && (
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                  assignedRep.type === 'strict' 
-                                    ? 'bg-emerald-100 text-emerald-700' 
-                                    : 'bg-orange-100 text-orange-600'
-                                }`}>
-                                  {assignedRep.type === 'strict' ? 'Class Teacher Match' : 'General Free Staff'}
-                                </span>
-                              )}
-                            </div>
-                            <select 
-                              className={`w-full p-2 border rounded-lg text-sm font-medium outline-none transition-all ${
-                                assignedTeacherId 
-                                  ? 'border-emerald-300 bg-white text-slate-800 font-bold' 
-                                  : 'border-slate-300 bg-white text-slate-700 focus:ring-2 focus:ring-blue-500'
-                              }`}
-                              value={assignedTeacherId}
-                              onChange={(e) => setAssignments(prev => ({ ...prev, [item.id]: e.target.value }))}
-                            >
-                              <option value="">-- Select Substitute --</option>
-                              <optgroup label="★ Teaches This Class (Preferred)">
-                                {item.replacements.filter(r => r.type === 'strict' && !isTeacherAbsent(r)).map(r => {
-                                  const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
-                                  return (
-                                    <option key={r.id} value={r.id} disabled={isBooked}>
-                                      {formatCandidateOption(r, isBooked)}
-                                    </option>
-                                  );
-                                })}
-                              </optgroup>
-                              <optgroup label="Other Free Teachers">
-                                {item.replacements.filter(r => r.type === 'general' && !isTeacherAbsent(r)).map(r => {
-                                  const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
-                                  return (
-                                    <option key={r.id} value={r.id} disabled={isBooked}>
-                                      {formatCandidateOption(r, isBooked)}
-                                    </option>
-                                  );
-                                })}
-                              </optgroup>
-                            </select>
+                            )}
                           </div>
+                          <select 
+                            className={`w-full p-2 border rounded-lg text-sm font-medium outline-none transition-all ${
+                              assignedTeacherId 
+                                ? 'border-emerald-300 bg-white text-slate-800 font-bold' 
+                                : 'border-slate-300 bg-white text-slate-700 focus:ring-2 focus:ring-blue-500'
+                            }`}
+                            value={assignedTeacherId}
+                            onChange={(e) => setAssignments(prev => ({ ...prev, [item.id]: e.target.value }))}
+                          >
+                            <option value="">-- Select Substitute --</option>
+                            <optgroup label="★ Teaches This Class (Preferred)">
+                              {item.replacements.filter(r => r.type === 'strict' && !isTeacherAbsent(r)).map(r => {
+                                const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
+                                return (
+                                  <option key={r.id} value={r.id} disabled={isBooked}>
+                                    {formatCandidateOption(r, isBooked)}
+                                  </option>
+                                );
+                              })}
+                            </optgroup>
+                            <optgroup label="Other Free Teachers">
+                              {item.replacements.filter(r => r.type === 'general' && !isTeacherAbsent(r)).map(r => {
+                                const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
+                                return (
+                                  <option key={r.id} value={r.id} disabled={isBooked}>
+                                    {formatCandidateOption(r, isBooked)}
+                                  </option>
+                                );
+                              })}
+                            </optgroup>
+                          </select>
                         </div>
                       </div>
                     );
