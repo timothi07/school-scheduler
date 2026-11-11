@@ -523,9 +523,17 @@ const loadPersistedSubState = () => {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && parsed.date === todayStr) {
+        let restoredSessions = {};
+        if (parsed.absentSessions && typeof parsed.absentSessions === 'object') {
+          restoredSessions = parsed.absentSessions;
+        } else if (Array.isArray(parsed.absentIds)) {
+          parsed.absentIds.forEach(id => {
+            restoredSessions[id] = { fn: true, an: true };
+          });
+        }
         return {
           selectedDay: DAYS.includes(parsed.selectedDay) ? parsed.selectedDay : defaultDay,
-          absentIds: Array.isArray(parsed.absentIds) ? parsed.absentIds : [],
+          absentSessions: restoredSessions,
           assignments: parsed.assignments && typeof parsed.assignments === 'object' ? parsed.assignments : {}
         };
       }
@@ -536,7 +544,7 @@ const loadPersistedSubState = () => {
 
   return {
     selectedDay: defaultDay,
-    absentIds: [],
+    absentSessions: {},
     assignments: {}
   };
 };
@@ -1214,14 +1222,17 @@ const SubstitutionGenerator = ({
   PrintMode,
   selectedDay,
   setSelectedDay,
-  absentIds,
+  absentSessions,
   toggleAbsent,
+  toggleAbsentSession,
   clearAbsent,
   assignments,
   setAssignments 
 }) => {
   const [staffSearch, setStaffSearch] = useState('');
   const [copiedWhatsApp, setCopiedWhatsApp] = useState(false);
+
+  const absentIds = useMemo(() => Object.keys(absentSessions), [absentSessions]);
 
   const validClassCodes = useMemo(() => {
     const codes = new Set();
@@ -1233,20 +1244,43 @@ const SubstitutionGenerator = ({
     return codes;
   }, [definedClasses]);
 
-  // Track both absent IDs and absent Teacher Names so an absent teacher is NEVER suggested or assigned
-  const absentIdSet = useMemo(() => new Set(absentIds), [absentIds]);
-  const absentNameSet = useMemo(() => {
-    const names = new Set();
-    absentIds.forEach(id => {
-      const t = teachers.find(tr => tr.id === id);
-      if (t?.name) names.add(t.name.trim().toUpperCase());
-    });
-    return names;
-  }, [absentIds, teachers]);
-
-  const isTeacherAbsent = (teacher) => {
+  // Period-aware check: returns true if the teacher is absent during periodIndex (0-3 = FN, 4-6 = AN)
+  const isTeacherAbsentInPeriod = (teacher, periodIndex) => {
     if (!teacher) return true;
-    return absentIdSet.has(teacher.id) || absentNameSet.has((teacher.name || '').trim().toUpperCase());
+    const isFN = periodIndex < 4;
+    const sessionById = absentSessions[teacher.id];
+    if (sessionById && (isFN ? sessionById.fn : sessionById.an)) {
+      return true;
+    }
+
+    const teacherNameUpper = (teacher.name || '').trim().toUpperCase();
+    if (teacherNameUpper) {
+      for (const [absId, sess] of Object.entries(absentSessions)) {
+        const absTeacher = teachers.find(tr => tr.id === absId);
+        if (absTeacher?.name?.trim().toUpperCase() === teacherNameUpper) {
+          if (isFN ? sess.fn : sess.an) return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  // Format leave label for display (e.g., "FN", "AN", or "")
+  const getTeacherLeaveBadge = (teacherId) => {
+    const sess = absentSessions[teacherId];
+    if (!sess) return '';
+    if (sess.fn && sess.an) return 'Full Day';
+    if (sess.fn) return 'FN (Pds 1–4)';
+    if (sess.an) return 'AN (Pds 5–7)';
+    return '';
+  };
+
+  const getTeacherShortLeaveTag = (teacherId) => {
+    const sess = absentSessions[teacherId];
+    if (!sess) return '';
+    if (sess.fn && !sess.an) return ' (FN)';
+    if (!sess.fn && sess.an) return ' (AN)';
+    return '';
   };
 
   const extractClassCodes = (entry) => {
@@ -1292,48 +1326,54 @@ const SubstitutionGenerator = ({
 
     absentIds.forEach(absentId => {
       const absentTeacher = teachers.find(t => t.id === absentId);
-      if (!absentTeacher || !absentTeacher.timetable || !absentTeacher.timetable[selectedDay]) return;
+      const session = absentSessions[absentId];
+      if (!absentTeacher || !session || !absentTeacher.timetable || !absentTeacher.timetable[selectedDay]) return;
 
       absentTeacher.timetable[selectedDay].forEach((subject, periodIndex) => {
-        if (periodIndex < 7 && subject && subject.trim() !== '') {
-          const targetCodes = extractClassCodes(subject);
-          const strictMatches = [];
-          const generalMatches = [];
+        if (periodIndex >= 7 || !subject || subject.trim() === '') return;
 
-          teachers.forEach(t => {
-            // Strictly exclude any teacher who is marked absent (by ID or by Name)
-            if (t.id === absentId || isTeacherAbsent(t)) return;
+        // Only generate a substitution slot if the teacher is marked absent for this period's session (FN: 1-4, AN: 5-7)
+        const isAbsentThisPeriod = periodIndex < 4 ? session.fn : session.an;
+        if (!isAbsentThisPeriod) return;
 
-            const tSchedule = t.timetable?.[selectedDay];
-            const tActivity = tSchedule?.[periodIndex];
-            const isFree = !tActivity || tActivity.trim() === '';
-            
-            if (isFree) {
-              const dailyLoad = getTeacherDailyLoad(t);
-              const freePeriodsToday = 7 - dailyLoad;
-              const teacherObj = { ...t, dailyLoad, freePeriodsToday };
-              if (targetCodes.length > 0 && teacherTeachesAny(t, targetCodes)) {
-                strictMatches.push({ ...teacherObj, type: 'strict' });
-              } else {
-                generalMatches.push({ ...teacherObj, type: 'general' });
-              }
+        const targetCodes = extractClassCodes(subject);
+        const strictMatches = [];
+        const generalMatches = [];
+
+        teachers.forEach(t => {
+          // Strictly exclude the absent teacher and anyone else marked absent during this period
+          if (t.id === absentId || isTeacherAbsentInPeriod(t, periodIndex)) return;
+
+          const tSchedule = t.timetable?.[selectedDay];
+          const tActivity = tSchedule?.[periodIndex];
+          const isFree = !tActivity || tActivity.trim() === '';
+          
+          if (isFree) {
+            const dailyLoad = getTeacherDailyLoad(t);
+            const freePeriodsToday = 7 - dailyLoad;
+            const teacherObj = { ...t, dailyLoad, freePeriodsToday };
+            if (targetCodes.length > 0 && teacherTeachesAny(t, targetCodes)) {
+              strictMatches.push({ ...teacherObj, type: 'strict' });
+            } else {
+              generalMatches.push({ ...teacherObj, type: 'general' });
             }
-          });
+          }
+        });
 
-          // Sort by most free periods today first, then alphabetically
-          strictMatches.sort((a, b) => b.freePeriodsToday - a.freePeriodsToday || a.name.localeCompare(b.name));
-          generalMatches.sort((a, b) => b.freePeriodsToday - a.freePeriodsToday || a.name.localeCompare(b.name));
+        // Sort by most free periods today first, then alphabetically
+        strictMatches.sort((a, b) => b.freePeriodsToday - a.freePeriodsToday || a.name.localeCompare(b.name));
+        generalMatches.sort((a, b) => b.freePeriodsToday - a.freePeriodsToday || a.name.localeCompare(b.name));
 
-          results.push({
-            id: `${absentId}-${periodIndex}`, 
-            period: periodIndex + 1,
-            classInfo: subject,
-            targetCodes,
-            absentTeacherName: absentTeacher.name,
-            absentTeacherId: absentId,
-            replacements: [...strictMatches, ...generalMatches]
-          });
-        }
+        results.push({
+          id: `${absentId}-${periodIndex}`, 
+          period: periodIndex + 1,
+          periodIndex,
+          classInfo: subject,
+          targetCodes,
+          absentTeacherName: absentTeacher.name,
+          absentTeacherId: absentId,
+          replacements: [...strictMatches, ...generalMatches]
+        });
       });
     });
 
@@ -1343,19 +1383,19 @@ const SubstitutionGenerator = ({
       }
       return a.period - b.period;
     });
-  }, [selectedDay, absentIds, teachers, validClassCodes, absentIdSet, absentNameSet]);
+  }, [selectedDay, absentIds, absentSessions, teachers, validClassCodes]);
 
   // Live count of how many substitutions each teacher is currently assigned today
   const assignedSubCounts = useMemo(() => {
     const counts = {};
     substitutionData.forEach(item => {
       const tid = assignments[item.id];
-      if (tid && item.replacements.some(r => r.id === tid && !isTeacherAbsent(r))) {
+      if (tid && item.replacements.some(r => r.id === tid && !isTeacherAbsentInPeriod(r, item.periodIndex))) {
         counts[tid] = (counts[tid] || 0) + 1;
       }
     });
     return counts;
-  }, [assignments, substitutionData, absentIdSet, absentNameSet]);
+  }, [assignments, substitutionData, absentSessions, teachers]);
 
   // Automatically purge any invalid or newly-absent teacher from assignments
   useEffect(() => {
@@ -1371,7 +1411,7 @@ const SubstitutionGenerator = ({
         if (
           !slotItem ||
           !assignedTeacherObj ||
-          isTeacherAbsent(assignedTeacherObj) ||
+          isTeacherAbsentInPeriod(assignedTeacherObj, slotItem.periodIndex) ||
           !slotItem.replacements.some(r => r.id === assignedTid)
         ) {
           delete next[slotId];
@@ -1381,7 +1421,7 @@ const SubstitutionGenerator = ({
 
       return changed ? next : prev;
     });
-  }, [substitutionData, absentIds, teachers, PrintMode, setAssignments]);
+  }, [substitutionData, absentSessions, teachers, PrintMode, setAssignments]);
 
   const isTeacherBookedInPeriod = (teacherId, period, currentSlotId) => {
     const targetTeacher = teachers.find(t => t.id === teacherId);
@@ -1406,7 +1446,7 @@ const SubstitutionGenerator = ({
     const nextAssignments = {};
     const subCountTracker = {};
 
-    // 1. Keep only valid manual assignments where the teacher is NOT absent, IS free in that slot, and NOT double-booked
+    // 1. Keep only valid manual assignments where the teacher is NOT absent in that period, IS free in that slot, and NOT double-booked
     substitutionData.forEach(item => {
       const existingTid = assignments[item.id];
       if (!existingTid) return;
@@ -1414,7 +1454,7 @@ const SubstitutionGenerator = ({
       const existingTeacher = teachers.find(t => t.id === existingTid);
       const isValidReplacement = item.replacements.some(r => r.id === existingTid);
 
-      if (existingTeacher && !isTeacherAbsent(existingTeacher) && isValidReplacement) {
+      if (existingTeacher && !isTeacherAbsentInPeriod(existingTeacher, item.periodIndex) && isValidReplacement) {
         const hasPeriodConflict = Object.entries(nextAssignments).some(([otherSlotId, otherTid]) => {
           const otherItem = substitutionData.find(d => d.id === otherSlotId);
           return otherItem && otherItem.period === item.period && otherTid === existingTid;
@@ -1432,7 +1472,7 @@ const SubstitutionGenerator = ({
       if (nextAssignments[item.id]) return;
 
       const available = item.replacements.filter(cand => {
-        if (isTeacherAbsent(cand)) return false;
+        if (isTeacherAbsentInPeriod(cand, item.periodIndex)) return false;
 
         // Check period conflict in nextAssignments (by ID and Name)
         for (const [slotId, assignedTid] of Object.entries(nextAssignments)) {
@@ -1476,7 +1516,11 @@ const SubstitutionGenerator = ({
     if (substitutionData.length === 0) return;
     const dateStr = new Date().toLocaleDateString('en-GB');
     const absentNames = [...absentIds]
-      .map(id => teachers.find(t => t.id === id)?.name)
+      .map(id => {
+        const t = teachers.find(tr => tr.id === id);
+        if (!t?.name) return null;
+        return `${t.name}${getTeacherShortLeaveTag(id)}`;
+      })
       .filter(Boolean)
       .sort()
       .join(', ');
@@ -1494,7 +1538,7 @@ const SubstitutionGenerator = ({
         lines.push(`\n*PERIOD ${period}*`);
         periodItems.forEach(item => {
           const assignedId = assignments[item.id];
-          const rep = item.replacements.find(r => r.id === assignedId && !isTeacherAbsent(r));
+          const rep = item.replacements.find(r => r.id === assignedId && !isTeacherAbsentInPeriod(r, item.periodIndex));
           const subLabel = rep ? `*${rep.name}*` : `_Unassigned_`;
           lines.push(`• Class *${item.classInfo}*: ${subLabel} _(for ${item.absentTeacherName})_`);
         });
@@ -1515,12 +1559,12 @@ const SubstitutionGenerator = ({
     return [...teachers]
       .filter(t => t.name.toLowerCase().includes(staffSearch.toLowerCase()))
       .sort((a, b) => {
-        const aAbsent = absentIds.includes(a.id);
-        const bAbsent = absentIds.includes(b.id);
+        const aAbsent = Boolean(absentSessions[a.id]);
+        const bAbsent = Boolean(absentSessions[b.id]);
         if (aAbsent !== bAbsent) return aAbsent ? -1 : 1;
         return a.name.localeCompare(b.name);
       });
-  }, [teachers, staffSearch, absentIds]);
+  }, [teachers, staffSearch, absentSessions]);
 
   const handlePrint = () => {
     const originalTitle = document.title;
@@ -1545,7 +1589,7 @@ const SubstitutionGenerator = ({
 
   const assignedCount = substitutionData.filter(item => {
     const tid = assignments[item.id];
-    return tid && item.replacements.some(r => r.id === tid && !isTeacherAbsent(r));
+    return tid && item.replacements.some(r => r.id === tid && !isTeacherAbsentInPeriod(r, item.periodIndex));
   }).length;
 
   // Format option text with live assigned sub count
@@ -1595,11 +1639,17 @@ const SubstitutionGenerator = ({
             }).map(absentId => {
               const teacher = teachers.find(t => t.id === absentId);
               if (!teacher) return null;
+              const shortLeaveTag = getTeacherShortLeaveTag(absentId);
               
               return (
                 <tr key={absentId}>
                   <td className="font-bold bg-white text-red-700 text-sm">
-                    {teacher.name}
+                    <div>{teacher.name}</div>
+                    {shortLeaveTag && (
+                      <div className="text-[10px] font-semibold text-gray-600">
+                        {shortLeaveTag.trim()}
+                      </div>
+                    )}
                   </td>
                   {PERIODS.map((p, index) => {
                     const slotId = `${absentId}-${index}`; 
@@ -1612,7 +1662,9 @@ const SubstitutionGenerator = ({
                     if (item) {
                       content = item.classInfo;
                       const assignedId = assignments[slotId];
-                      const replacementInfo = item.replacements.find(r => r.id === assignedId && !isTeacherAbsent(r));
+                      const replacementInfo = item.replacements.find(
+                        r => r.id === assignedId && !isTeacherAbsentInPeriod(r, index)
+                      );
                       if (replacementInfo) {
                         subName = replacementInfo.name;
                         subType = replacementInfo.type;
@@ -1667,7 +1719,7 @@ const SubstitutionGenerator = ({
             </div>
             <div>
               <h2 className="text-base font-bold">Substitution Generator</h2>
-              <p className="text-slate-400 text-xs">Mark absent teachers and assign free staff</p>
+              <p className="text-slate-400 text-xs">Mark absent teachers (Full Day, FN, or AN) and assign free staff</p>
             </div>
           </div>
 
@@ -1741,13 +1793,18 @@ const SubstitutionGenerator = ({
             </div>
 
             <div className="flex items-center justify-between mb-2 shrink-0">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                2. Absent Staff ({absentIds.length})
-              </label>
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                  2. Absent Staff ({absentIds.length})
+                </label>
+                <span className="text-[10px] text-slate-400">
+                  Full day by default • Toggle FN (1–4) or AN (5–7) for half-day
+                </span>
+              </div>
               {absentIds.length > 0 && (
                 <button 
                   onClick={clearAbsent}
-                  className="text-xs text-red-600 hover:underline font-medium"
+                  className="text-xs text-red-600 hover:underline font-medium shrink-0"
                 >
                   Clear All
                 </button>
@@ -1775,12 +1832,16 @@ const SubstitutionGenerator = ({
 
             <div className="overflow-y-auto flex-1 space-y-1.5 pr-1 min-h-0">
               {filteredTeachers.map(t => {
-                const isAbsent = absentIds.includes(t.id);
+                const session = absentSessions[t.id];
+                const isAbsent = Boolean(session);
                 const todayClassesCount = getTeacherDailyLoad(t);
                 const subCountToday = assignedSubCounts[t.id] || 0;
+                const leaveBadge = getTeacherLeaveBadge(t.id);
+
                 return (
-                  <label 
+                  <div 
                     key={t.id} 
+                    onClick={() => toggleAbsent(t.id)}
                     className={`
                       flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all
                       ${isAbsent 
@@ -1789,36 +1850,67 @@ const SubstitutionGenerator = ({
                       }
                     `}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <div className={`
                         w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors
                         ${isAbsent ? 'bg-red-600 border-red-600' : 'border-slate-300 bg-white'}
                       `}>
                         {isAbsent && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
                       </div>
-                      <input 
-                        type="checkbox" 
-                        className="hidden"
-                        checked={isAbsent}
-                        onChange={() => toggleAbsent(t.id)}
-                      />
-                      <span className={`font-bold text-sm ${isAbsent ? 'text-red-800' : 'text-slate-700'}`}>
-                        {t.name}
-                      </span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`font-bold text-sm truncate ${isAbsent ? 'text-red-800' : 'text-slate-700'}`}>
+                            {t.name}
+                          </span>
+                          {isAbsent && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-700 whitespace-nowrap">
+                              {leaveBadge}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      {!isAbsent && subCountToday > 0 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700">
-                          +{subCountToday} sub
+
+                    {isAbsent ? (
+                      <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => toggleAbsentSession(t.id, 'fn')}
+                          title="Forenoon Leave (Periods 1 to 4)"
+                          className={`px-2 py-1 rounded-md text-[11px] font-bold border transition-all ${
+                            session.fn
+                              ? 'bg-red-600 text-white border-red-600 shadow-sm'
+                              : 'bg-white text-slate-500 border-slate-300 hover:border-red-300'
+                          }`}
+                        >
+                          FN (1-4)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleAbsentSession(t.id, 'an')}
+                          title="Afternoon Leave (Periods 5 to 7)"
+                          className={`px-2 py-1 rounded-md text-[11px] font-bold border transition-all ${
+                            session.an
+                              ? 'bg-red-600 text-white border-red-600 shadow-sm'
+                              : 'bg-white text-slate-500 border-slate-300 hover:border-red-300'
+                          }`}
+                        >
+                          AN (5-7)
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {subCountToday > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700">
+                            +{subCountToday} sub
+                          </span>
+                        )}
+                        <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-500">
+                          {todayClassesCount} pds today
                         </span>
-                      )}
-                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
-                        isAbsent ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'
-                      }`}>
-                        {todayClassesCount} pds today
-                      </span>
-                    </div>
-                  </label>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -1838,7 +1930,7 @@ const SubstitutionGenerator = ({
               <div className="h-full flex flex-col items-center justify-center text-emerald-600 py-12">
                 <CheckCircle2 className="w-14 h-14 mb-3" />
                 <p className="text-base font-bold">No Substitutions Needed</p>
-                <p className="text-slate-500 text-xs mt-1">The selected absent staff have no scheduled classes on {selectedDay}.</p>
+                <p className="text-slate-500 text-xs mt-1">The selected absent staff have no scheduled classes during their leave session on {selectedDay}.</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -1869,8 +1961,11 @@ const SubstitutionGenerator = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {substitutionData.map((item) => {
                     const rawAssignedId = assignments[item.id] || "";
-                    const assignedRep = item.replacements.find(r => r.id === rawAssignedId && !isTeacherAbsent(r));
+                    const assignedRep = item.replacements.find(
+                      r => r.id === rawAssignedId && !isTeacherAbsentInPeriod(r, item.periodIndex)
+                    );
                     const assignedTeacherId = assignedRep ? rawAssignedId : "";
+                    const sessionLabel = item.period <= 4 ? 'FN' : 'AN';
 
                     return (
                       <div 
@@ -1884,14 +1979,14 @@ const SubstitutionGenerator = ({
                         <div className="bg-slate-50/80 px-3.5 py-2.5 border-b border-slate-100 flex justify-between items-center gap-2">
                           <div className="flex items-center gap-2">
                             <span className="bg-slate-800 text-white text-[11px] font-bold px-2 py-0.5 rounded-md">
-                              PD {item.period}
+                              PD {item.period} ({sessionLabel})
                             </span>
                             <span className="font-bold text-slate-800 text-sm">
                               Class {item.classInfo}
                             </span>
                           </div>
                           <span className="text-[11px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full border border-red-100">
-                            Absent: {item.absentTeacherName}
+                            Absent: {item.absentTeacherName}{getTeacherShortLeaveTag(item.absentTeacherId)}
                           </span>
                         </div>
 
@@ -1921,7 +2016,7 @@ const SubstitutionGenerator = ({
                           >
                             <option value="">-- Select Substitute --</option>
                             <optgroup label="★ Teaches This Class (Preferred)">
-                              {item.replacements.filter(r => r.type === 'strict' && !isTeacherAbsent(r)).map(r => {
+                              {item.replacements.filter(r => r.type === 'strict' && !isTeacherAbsentInPeriod(r, item.periodIndex)).map(r => {
                                 const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
                                 return (
                                   <option key={r.id} value={r.id} disabled={isBooked}>
@@ -1931,7 +2026,7 @@ const SubstitutionGenerator = ({
                               })}
                             </optgroup>
                             <optgroup label="Other Free Teachers">
-                              {item.replacements.filter(r => r.type === 'general' && !isTeacherAbsent(r)).map(r => {
+                              {item.replacements.filter(r => r.type === 'general' && !isTeacherAbsentInPeriod(r, item.periodIndex)).map(r => {
                                 const isBooked = isTeacherBookedInPeriod(r.id, item.period, item.id);
                                 return (
                                   <option key={r.id} value={r.id} disabled={isBooked}>
@@ -2014,7 +2109,7 @@ export default function App() {
   // Hoisted state for substitution logic (persisted in localStorage for today)
   const initialPersisted = useMemo(() => loadPersistedSubState(), []);
   const [selectedDay, setSelectedDay] = useState(initialPersisted.selectedDay);
-  const [absentIds, setAbsentIds] = useState(initialPersisted.absentIds);
+  const [absentSessions, setAbsentSessions] = useState(initialPersisted.absentSessions);
   const [assignments, setAssignments] = useState(initialPersisted.assignments);
 
   // Persist substitution state to localStorage whenever it changes
@@ -2026,14 +2121,15 @@ export default function App() {
         JSON.stringify({
           date: todayStr,
           selectedDay,
-          absentIds,
+          absentSessions,
+          absentIds: Object.keys(absentSessions),
           assignments
         })
       );
     } catch (e) {
       console.warn("Could not save state to localStorage", e);
     }
-  }, [selectedDay, absentIds, assignments]);
+  }, [selectedDay, absentSessions, assignments]);
 
   // Set Clock Favicon and Page Title dynamically
   useEffect(() => {
@@ -2049,33 +2145,84 @@ export default function App() {
     link.href = clockSvg;
   }, []);
 
-  // Clean up assignments whenever a teacher is marked OR unmarked absent
+  // Toggle a teacher's absence (Defaults to Full Day: fn = true, an = true)
   const toggleAbsent = (id) => {
-    setAbsentIds(prev => {
-      const exists = prev.includes(id);
-      const nextAbsentIds = exists ? prev.filter(pid => pid !== id) : [...prev, id];
-      const nextAbsentSet = new Set(nextAbsentIds);
+    setAbsentSessions(prev => {
+      const next = { ...prev };
+      if (next[id]) {
+        delete next[id];
+      } else {
+        next[id] = { fn: true, an: true };
+      }
 
       setAssignments(curr => {
-        const next = { ...curr };
-        Object.keys(next).forEach(key => {
+        const updated = { ...curr };
+        Object.keys(updated).forEach(slotKey => {
+          const periodIdx = parseInt(slotKey.split('-').pop(), 10);
+          const isFN = periodIdx < 4;
+          const assignedTid = updated[slotKey];
+          const assignedSess = next[assignedTid];
+
+          // Remove slots belonging to a teacher who was unmarked, OR slots where the assigned substitute is now absent
           if (
-            key.startsWith(`${id}-`) ||
-            next[key] === id ||
-            nextAbsentSet.has(next[key])
+            (slotKey.startsWith(`${id}-`) && !next[id]) ||
+            (assignedSess && (isFN ? assignedSess.fn : assignedSess.an))
           ) {
-            delete next[key];
+            delete updated[slotKey];
           }
         });
-        return next;
+        return updated;
       });
 
-      return nextAbsentIds;
+      return next;
+    });
+  };
+
+  // Toggle FN (Periods 1-4) or AN (Periods 5-7) individually for a teacher
+  const toggleAbsentSession = (id, part) => {
+    setAbsentSessions(prev => {
+      const current = prev[id];
+      if (!current) return prev;
+
+      const updatedSession = {
+        ...current,
+        [part]: !current[part]
+      };
+
+      const next = { ...prev };
+      // If both FN and AN are deselected, remove teacher from absent list
+      if (!updatedSession.fn && !updatedSession.an) {
+        delete next[id];
+      } else {
+        next[id] = updatedSession;
+      }
+
+      setAssignments(curr => {
+        const updated = { ...curr };
+        Object.keys(updated).forEach(slotKey => {
+          const periodIdx = parseInt(slotKey.split('-').pop(), 10);
+          const isFN = periodIdx < 4;
+          const assignedTid = updated[slotKey];
+          const assignedSess = next[assignedTid];
+          const ownerSess = next[id];
+
+          // Clean up slots if this teacher is no longer absent in that period, or if an assigned substitute is now absent in that period
+          if (
+            (slotKey.startsWith(`${id}-`) && (!ownerSess || !(isFN ? ownerSess.fn : ownerSess.an))) ||
+            (assignedSess && (isFN ? assignedSess.fn : assignedSess.an))
+          ) {
+            delete updated[slotKey];
+          }
+        });
+        return updated;
+      });
+
+      return next;
     });
   };
 
   const clearAbsent = () => {
-    setAbsentIds([]);
+    setAbsentSessions({});
     setAssignments({});
   };
 
@@ -2556,8 +2703,9 @@ export default function App() {
                 definedClasses={classes}
                 selectedDay={selectedDay}
                 setSelectedDay={handleSelectDay}
-                absentIds={absentIds}
+                absentSessions={absentSessions}
                 toggleAbsent={toggleAbsent}
+                toggleAbsentSession={toggleAbsentSession}
                 clearAbsent={clearAbsent}
                 assignments={assignments}
                 setAssignments={setAssignments}
@@ -2583,8 +2731,9 @@ export default function App() {
           definedClasses={classes}
           selectedDay={selectedDay}
           setSelectedDay={() => {}}
-          absentIds={absentIds}
+          absentSessions={absentSessions}
           toggleAbsent={() => {}}
+          toggleAbsentSession={() => {}}
           clearAbsent={() => {}}
           assignments={assignments}
           setAssignments={() => {}}
