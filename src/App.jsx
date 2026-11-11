@@ -1265,13 +1265,13 @@ const SubstitutionGenerator = ({
     return false;
   };
 
-  // Format leave label for display (e.g., "FN", "AN", or "")
+  // Format leave label for display ("Full Day", "FN", or "AN")
   const getTeacherLeaveBadge = (teacherId) => {
     const sess = absentSessions[teacherId];
     if (!sess) return '';
     if (sess.fn && sess.an) return 'Full Day';
-    if (sess.fn) return 'FN (Pds 1–4)';
-    if (sess.an) return 'AN (Pds 5–7)';
+    if (sess.fn) return 'FN';
+    if (sess.an) return 'AN';
     return '';
   };
 
@@ -1571,20 +1571,10 @@ const SubstitutionGenerator = ({
     const dateStr = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
     document.title = `${dateStr}_Substitution_${selectedDay}`;
 
-    // Temporarily widen mobile viewport so mobile print engines do not clip right-side columns
-    const viewportMeta = document.querySelector('meta[name="viewport"]');
-    const originalViewport = viewportMeta ? viewportMeta.getAttribute('content') : '';
-    if (viewportMeta) {
-      viewportMeta.setAttribute('content', 'width=1024');
-    }
-
     setTimeout(() => {
       window.print();
       document.title = originalTitle;
-      if (viewportMeta && originalViewport) {
-        viewportMeta.setAttribute('content', originalViewport);
-      }
-    }, 150);
+    }, 100);
   };
 
   const assignedCount = substitutionData.filter(item => {
@@ -1599,15 +1589,15 @@ const SubstitutionGenerator = ({
     return `${r.name} (${r.freePeriodsToday} free today${subTag})${isBooked ? ' — [Busy]' : ''}`;
   };
 
-  // Print Layout (Optimized for both Desktop and Mobile PDF generation)
+  // Print Layout (Fits 100% of Portrait or Landscape on both Mobile and Desktop)
   if (PrintMode) {
     return (
       <div className="print-only hidden bg-white text-black">
-        <div className="text-center mb-3">
-          <h1 className="text-lg font-bold uppercase tracking-wide">
+        <div className="text-center mb-2.5">
+          <h1 className="text-base font-bold uppercase tracking-wide">
             GHSS POOKKOTTUR — SUBSTITUTION CHART
           </h1>
-          <h2 className="text-sm font-bold mt-0.5 uppercase">
+          <h2 className="text-xs font-bold mt-0.5 uppercase">
             {selectedDay} — {new Date().toLocaleDateString('en-GB')}
           </h2>
         </div>
@@ -1643,10 +1633,10 @@ const SubstitutionGenerator = ({
               
               return (
                 <tr key={absentId}>
-                  <td className="font-bold bg-white text-red-700 text-sm">
+                  <td className="font-bold bg-white text-red-700 text-xs">
                     <div>{teacher.name}</div>
                     {shortLeaveTag && (
-                      <div className="text-[10px] font-semibold text-gray-600">
+                      <div className="text-[9px] font-semibold text-gray-600">
                         {shortLeaveTag.trim()}
                       </div>
                     )}
@@ -1679,15 +1669,15 @@ const SubstitutionGenerator = ({
                       <td key={p}>
                         {item ? (
                           <div className="flex flex-col items-center justify-center gap-0.5 py-0.5">
-                            <span className="text-[11px] font-semibold text-gray-700 leading-tight">
+                            <span className="text-[10px] font-semibold text-gray-700 leading-tight">
                               {content}
                             </span>
                             {subName ? (
-                              <span className={`font-bold text-sm leading-tight ${colorClass}`}>
+                              <span className={`font-bold text-xs leading-tight ${colorClass}`}>
                                 {subName}
                               </span>
                             ) : (
-                              <span className="text-[10px] text-red-400 italic leading-tight">
+                              <span className="text-[9px] text-red-400 italic leading-tight">
                                 Unassigned
                               </span>
                             )}
@@ -1798,7 +1788,7 @@ const SubstitutionGenerator = ({
                   2. Absent Staff ({absentIds.length})
                 </label>
                 <span className="text-[10px] text-slate-400">
-                  Full day by default • Toggle FN (1–4) or AN (5–7) for half-day
+                  Full day by default • Toggle FN or AN for half-day
                 </span>
               </div>
               {absentIds.length > 0 && (
@@ -1876,26 +1866,26 @@ const SubstitutionGenerator = ({
                         <button
                           type="button"
                           onClick={() => toggleAbsentSession(t.id, 'fn')}
-                          title="Forenoon Leave (Periods 1 to 4)"
-                          className={`px-2 py-1 rounded-md text-[11px] font-bold border transition-all ${
+                          title="Forenoon Leave"
+                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold border transition-all ${
                             session.fn
                               ? 'bg-red-600 text-white border-red-600 shadow-sm'
                               : 'bg-white text-slate-500 border-slate-300 hover:border-red-300'
                           }`}
                         >
-                          FN (1-4)
+                          FN
                         </button>
                         <button
                           type="button"
                           onClick={() => toggleAbsentSession(t.id, 'an')}
-                          title="Afternoon Leave (Periods 5 to 7)"
-                          className={`px-2 py-1 rounded-md text-[11px] font-bold border transition-all ${
+                          title="Afternoon Leave"
+                          className={`px-2.5 py-1 rounded-md text-[11px] font-bold border transition-all ${
                             session.an
                               ? 'bg-red-600 text-white border-red-600 shadow-sm'
                               : 'bg-white text-slate-500 border-slate-300 hover:border-red-300'
                           }`}
                         >
-                          AN (5-7)
+                          AN
                         </button>
                       </div>
                     ) : (
@@ -1965,7 +1955,6 @@ const SubstitutionGenerator = ({
                       r => r.id === rawAssignedId && !isTeacherAbsentInPeriod(r, item.periodIndex)
                     );
                     const assignedTeacherId = assignedRep ? rawAssignedId : "";
-                    const sessionLabel = item.period <= 4 ? 'FN' : 'AN';
 
                     return (
                       <div 
@@ -1979,14 +1968,14 @@ const SubstitutionGenerator = ({
                         <div className="bg-slate-50/80 px-3.5 py-2.5 border-b border-slate-100 flex justify-between items-center gap-2">
                           <div className="flex items-center gap-2">
                             <span className="bg-slate-800 text-white text-[11px] font-bold px-2 py-0.5 rounded-md">
-                              PD {item.period} ({sessionLabel})
+                              PD {item.period}
                             </span>
                             <span className="font-bold text-slate-800 text-sm">
                               Class {item.classInfo}
                             </span>
                           </div>
                           <span className="text-[11px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full border border-red-100">
-                            Absent: {item.absentTeacherName}{getTeacherShortLeaveTag(item.absentTeacherId)}
+                            Absent: {item.absentTeacherName}
                           </span>
                         </div>
 
@@ -2453,14 +2442,14 @@ export default function App() {
       <style>{`
         @media print {
           @page {
-            size: A4 landscape;
-            margin: 6mm;
+            margin: 5mm;
           }
           html, body, #root, .app-root-shell {
             height: auto !important;
             min-height: 0 !important;
             width: 100% !important;
             max-width: 100% !important;
+            min-width: 0 !important;
             overflow: visible !important;
             display: block !important;
             background: #ffffff !important;
@@ -2477,33 +2466,39 @@ export default function App() {
             position: static !important;
             width: 100% !important;
             max-width: 100% !important;
+            min-width: 0 !important;
             margin: 0 !important;
-            padding: 2mm !important;
+            padding: 0 !important;
             box-sizing: border-box !important;
+            overflow: hidden !important;
           }
           .print-table {
             width: 100% !important;
             max-width: 100% !important;
+            min-width: 0 !important;
             table-layout: fixed !important;
             border-collapse: collapse !important;
             border: 1.5px solid #000000 !important;
+            box-sizing: border-box !important;
           }
           .print-table th,
           .print-table td {
             border: 1px solid #000000 !important;
-            padding: 4px 2px !important;
+            padding: 3px 1px !important;
             text-align: center !important;
             vertical-align: middle !important;
             word-wrap: break-word !important;
             overflow-wrap: break-word !important;
-            font-size: 11px !important;
-            line-height: 1.25 !important;
-            height: 48px !important;
+            font-size: 10px !important;
+            line-height: 1.2 !important;
+            height: 44px !important;
+            box-sizing: border-box !important;
           }
           .print-table th {
             background-color: #f3f4f6 !important;
             font-weight: 700 !important;
-            height: 32px !important;
+            height: 30px !important;
+            font-size: 10px !important;
           }
           .print-table thead {
             display: table-header-group !important;
